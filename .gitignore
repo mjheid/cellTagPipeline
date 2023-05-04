@@ -10,8 +10,10 @@ data/fastq/*.csv
 data/*.log
 data/*.out
 data/test_data*
-data/refdata*
-data/S*
+data/refgenomes/*
+!data/refgenomes/.gitinclude
+data/samples/*
+!data/samples/.gitinclude
 data/sourceFile/*.gtf
 data/sourceFile/*.fa
 data/sourceFile/old*

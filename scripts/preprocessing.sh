@@ -123,14 +123,14 @@ if $mkref; then
     genome="$(pwd)$genome"
     genes="$(pwd)$genes"
     
-    cd data
+    cd data/refgenomes
     
     module load cellranger/5.0.1 
     
     echo "cellranger mkref --genome=$refgenome --fasta=$genome --genes=$genes"  >> data/Log.log
     cellranger mkref --genome=$refgenome --fasta=$genome --genes=$genes
     
-    cd ..
+    cd ../..
     conda activate $conda_env
     
 fi
@@ -144,8 +144,9 @@ if $count; then
     conda deactivate
     
     fastqs="$(pwd)$fastqs"
+    refgenome="$(pwd)refgenomes/$refgenome"
     
-    cd data
+    cd data/samples
     
     echo "cellranger count --id=${sample_name}  \
                     --fastqs=${fastqs}  \
@@ -160,7 +161,7 @@ if $count; then
                     --localcores=40  \
                     --expect-cells=${expect_cells}  \
     
-    cd ..
+    cd ../..
     conda activate $conda_env
 fi
 
@@ -171,16 +172,16 @@ if $filter_sam; then
     
     echo "Filtering..."
     
-    echo "samtools view -b -f 4 data/$sample_name/outs/possorted_genome_bam.bam > $bam_data/possorted_genome_bam.filtered_umapped.bam &" >> data/Log.log
-    samtools view -b -f 4 data/$sample_name/outs/possorted_genome_bam.bam > $bam_data/possorted_genome_bam.filtered_umapped.bam &
+    echo "samtools view -b -f 4 data/samples/$sample_name/outs/possorted_genome_bam.bam > $bam_data/possorted_genome_bam.filtered_umapped.bam &" >> data/Log.log
+    samtools view -b -f 4 data/samples/$sample_name/outs/possorted_genome_bam.bam > $bam_data/possorted_genome_bam.filtered_umapped.bam &
     pidid1=$!
     
-    echo "samtools view -b data/$sample_name/outs/possorted_genome_bam.bam $GFP  > $bam_data/possorted_genome_bam.filtered_GFP.CDS.bam &" >> data/Log.log
-    samtools view -b data/$sample_name/outs/possorted_genome_bam.bam $GFP  > $bam_data/possorted_genome_bam.filtered_GFP.CDS.bam &
+    echo "samtools view -b data/samples/$sample_name/outs/possorted_genome_bam.bam $GFP  > $bam_data/possorted_genome_bam.filtered_GFP.CDS.bam &" >> data/Log.log
+    samtools view -b data/samples/$sample_name/outs/possorted_genome_bam.bam $GFP  > $bam_data/possorted_genome_bam.filtered_GFP.CDS.bam &
     pidid2=$!
 
-    echo "samtools view -b data/$sample_name/outs/possorted_genome_bam.bam $UTR  > $bam_data/possorted_genome_bam.filtered_CellTag.UTR.bam &" >> data/Log.log
-    samtools view -b data/$sample_name/outs/possorted_genome_bam.bam $UTR  > $bam_data/possorted_genome_bam.filtered_CellTag.UTR.bam &
+    echo "samtools view -b data/samples/$sample_name/outs/possorted_genome_bam.bam $UTR  > $bam_data/possorted_genome_bam.filtered_CellTag.UTR.bam &" >> data/Log.log
+    samtools view -b data/samples/$sample_name/outs/possorted_genome_bam.bam $UTR  > $bam_data/possorted_genome_bam.filtered_CellTag.UTR.bam &
     pidid3=$!
 
     wait $pidid1 $pidid2 $pidid3

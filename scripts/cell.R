@@ -29,7 +29,6 @@ bamfilter=""
 
 if (opt$bamfilter){
     bamfilter = "_merged"
-    print("HEEEEEEEEEEEELLLOOOOOOO????")
 }
 
 # Set up the CellTag Object
@@ -40,7 +39,7 @@ bam.test.obj <- CellTagExtraction(bam.test.obj, celltag.version = opt$whitelist_
 
 
 bam.test.obj <- CellTagMatrixCount(celltag.obj = bam.test.obj,
-	barcodes.file = paste0("data/", opt$sample_name, "/outs/filtered_feature_bc_matrix/barcodes.tsv"))
+	barcodes.file = paste0("data/samples/", opt$sample_name, "/outs/filtered_feature_bc_matrix/barcodes.tsv"))
 
 
 bam.test.obj <- CellTagDataForCollapsing(celltag.obj = bam.test.obj, output.file = paste0(OUTDIR, opt$save_progress_name, "_", opt$collapsing_name))
