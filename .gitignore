@@ -21,3 +21,10 @@ data/out/*.txt
 data/out/*.pdf
 data/out/*.png
 data/out/*.csv
+*.csv
+*.fastq
+*.zip
+*.gz
+*.bam
+*.fasta
+*.fa
