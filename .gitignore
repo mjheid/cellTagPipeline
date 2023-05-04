@@ -3,6 +3,7 @@ figures
 /*.csv
 Patrick*
 data/bam/*.bam
+data/bam/*.bai
 data/fastq/*.gz
 data/fastq/*.fq
 data/fastq/*.fastq
@@ -28,5 +29,6 @@ data/out/*.csv
 *.zip
 *.gz
 *.bam
+*.bai
 *.fasta
 *.fa

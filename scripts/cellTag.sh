@@ -21,7 +21,7 @@ function usage {
 
 # Initialize variables
 sample_name="SI-TT-H4"
-bam_data="data/bam/"
+bam_data="data/bam/possorted_genome_bam.filtered.bam"
 out="data/out/"
 collapsing_name="collapsing.txt"
 save_progress_name="test"
@@ -30,7 +30,6 @@ whitelist_path="data/whitelist/V1.CellTag.Whitelist.csv"
 high_filter=20
 low_filter=1
 tagged=1
-bamfilter=false
 visualize=false
 
 # Check if argument is provided
@@ -55,7 +54,7 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     --sample_name)
-        ref_name=$2
+        sample_name=$2
         shift
         shift
         ;;
@@ -112,19 +111,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+
 echo "gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz" >> data/Log.log
 gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz
 
-if $bamfilter; then
-echo 'Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version --bamfilter' >> data/Log.log
-Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version --bamfilter
-else
+
 echo 'Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version' >> data/Log.log
 Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version
-fi
+
 
 echo 'starcode -s --print-clusters $out${save_progress_name}_$collapsing_name > $out/${save_progress_name}_${collapsing_name%.*}_result.txt' >> data/Log.log
 starcode -s --print-clusters $out${save_progress_name}_$collapsing_name > $out/${save_progress_name}_${collapsing_name%.*}_result.txt
+
 
 if $visualize; then
 echo 'Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize' >> data/Log.log

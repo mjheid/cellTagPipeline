@@ -13,26 +13,17 @@ option_list = list(
                 help="Name of experiment sample", metavar="character"),
     make_option(c("--whitelist_version"), type="character", default="v1", 
                 help="Version of whitelist", metavar="character"),
-    make_option(c("--bam_data"), type="character", default="data/bam/", 
-                help="Path from current dir to output dir of filtered .bam files", metavar="character"),
-    make_option(c("--bamfilter"), action="store_true", default=FALSE, 
-                help="Path from current dir to output dir of filtered .bam files")
+    make_option(c("--bam_data"), type="character", default="data/bam/possorted_genome_bam.filtered.bam", 
+                help="Path from current dir to .bam file", metavar="character")
 )
  
 opt_parser = OptionParser(option_list=option_list)
 opt = parse_args(opt_parser)
 
-DIR <- opt$bam_data
 OUTDIR <- opt$out
 
-bamfilter=""
-
-if (opt$bamfilter){
-    bamfilter = "_merged"
-}
-
 # Set up the CellTag Object
-bam.test.obj <- CellTagObject(object.name = "bam.cell.tag.obj", fastq.bam.directory = paste0(DIR, "possorted_genome_bam.filtered", bamfilter, ".bam"))
+bam.test.obj <- CellTagObject(object.name = "bam.cell.tag.obj", fastq.bam.directory = opt$bam_data)
 
 
 bam.test.obj <- CellTagExtraction(bam.test.obj, celltag.version = opt$whitelist_version)
