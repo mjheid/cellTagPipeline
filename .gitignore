@@ -24,6 +24,7 @@ data/out/*.txt
 data/out/*.pdf
 data/out/*.png
 data/out/*.csv
+data/out/*
 *.csv
 *.fastq
 *.zip

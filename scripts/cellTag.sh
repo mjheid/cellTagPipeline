@@ -27,6 +27,9 @@ collapsing_name="collapsing.txt"
 save_progress_name="test"
 whitelist_version="v1"
 whitelist_path="data/whitelist/V1.CellTag.Whitelist.csv"
+whitelist_path1="data/whitelist/V1.CellTag.Whitelist.csv"
+whitelist_path2="data/whitelist/V2.CellTag.Whitelist.csv"
+whitelist_path3="data/whitelist/V3.CellTag.Whitelist.csv"
 high_filter=20
 low_filter=1
 tagged=1
@@ -73,7 +76,7 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
-    --whitelist_version)
+    --whitelist_path)
         whitelist_path=$2
         shift
         shift
@@ -110,6 +113,16 @@ while [[ $# -gt 0 ]]; do
         ;;
   esac
 done
+
+# check if whitelist path got changed, if not, set whitelist 
+# path in accordance with specified version
+if [ $whitelist_path = $whitelist_path1]; then
+    if [ $whitelist_version = "v2"]; then
+        whitelist_path = $whitelist_path2
+    elif [ $whitelist_version = "v3" ]; then
+        whitelist_path = $whitelist_path3
+    fi
+fi
 
 
 echo "gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz" >> data/Log.log
