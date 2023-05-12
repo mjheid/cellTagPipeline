@@ -6,6 +6,7 @@ function usage {
   echo "Options:"
   echo "  preprocess [arguments]    Run the preprocessing script with the provided arguments. Build a reference genome, count stuff, filter stuff with samtools."
   echo "  cellTag [arguments]    Run the cellTagR pipeline with the provided arguments"
+  echo "  network [arguments]    Visualize clone lineages through networks and more."
   echo "  --help    Print this help. For more specific help on commands type [command] --help"
   exit 1
 }
@@ -26,6 +27,10 @@ case $1 in
   cellTag)
   echo "scripts/preprocessing.sh '${@:2}'" >> data/Log.log
     sh scripts/cellTag.sh "${@:2}"
+    ;;
+  network)
+  echo "scripts/network.R '${@:2}'" >> data/Log.log
+    sh scripts/network.R "${@:2}"
     ;;
   --help)
     usage

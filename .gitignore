@@ -33,3 +33,7 @@ data/out/*
 *.bai
 *.fasta
 *.fa
+*.pdf
+*.html
+.RData
+.Rhistory

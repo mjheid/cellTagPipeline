@@ -116,31 +116,30 @@ done
 
 # check if whitelist path got changed, if not, set whitelist 
 # path in accordance with specified version
-if [ $whitelist_path = $whitelist_path1]; then
-    if [ $whitelist_version = "v2"]; then
-        whitelist_path = $whitelist_path2
-    elif [ $whitelist_version = "v3" ]; then
-        whitelist_path = $whitelist_path3
+if [ "$whitelist_path" = "$whitelist_path1" ]; then
+    if [ "$whitelist_version" = "v2" ]; then
+        whitelist_path="$whitelist_path2"
+    elif [ "$whitelist_version" = "v3" ]; then
+        whitelist_path="$whitelist_path3"
     fi
 fi
-
 
 echo "gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz" >> data/Log.log
 gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz
 
 
-echo 'Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version' >> data/Log.log
+echo "Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version" >> data/Log.log
 Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version
 
 
-echo 'starcode -s --print-clusters $out${save_progress_name}_$collapsing_name > $out/${save_progress_name}_${collapsing_name%.*}_result.txt' >> data/Log.log
-starcode -s --print-clusters $out${save_progress_name}_$collapsing_name > $out/${save_progress_name}_${collapsing_name%.*}_result.txt
+echo "starcode -s --print-clusters $out${whitelist_version}${save_progress_name}_$collapsing_name > $out${whitelist_version}${save_progress_name}_${collapsing_name%.*}_result.txt" >> data/Log.log
+starcode -s --print-clusters $out${whitelist_version}${save_progress_name}_$collapsing_name > $out${whitelist_version}${save_progress_name}_${collapsing_name%.*}_result.txt
 
 
 if $visualize; then
-echo 'Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize' >> data/Log.log
-Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize
+echo "Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name '${save_progress_name}_${collapsing_name%.*}_result.txt' --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize" >> data/Log.log
+Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize
 else
-echo 'Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --high_filter $high_filter --low_filter $low_filter --tagged $tagged' >> data/Log.log
-Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --high_filter $high_filter --low_filter $low_filter --tagged $tagged
+echo "Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name '${save_progress_name}_${collapsing_name%.*}_result.txt' --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged" >> data/Log.log
+Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged
 fi

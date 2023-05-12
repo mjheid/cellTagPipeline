@@ -23,15 +23,17 @@ opt = parse_args(opt_parser)
 OUTDIR <- opt$out
 
 # Set up the CellTag Object
-bam.test.obj <- CellTagObject(object.name = "bam.cell.tag.obj", fastq.bam.directory = opt$bam_data)
-
+if (file.exists(paste0(opt$save_prograss_name, ".RDS"))) {
+    bam.test.obj <- readRDS(paste0(DIR, opt$save_progress_name, ".RDS"))
+} else {
+    bam.test.obj <- CellTagObject(object.name = "bam.cell.tag.obj", fastq.bam.directory = opt$bam_data)
+}
 
 bam.test.obj <- CellTagExtraction(bam.test.obj, celltag.version = opt$whitelist_version)
-
 
 bam.test.obj <- CellTagMatrixCount(celltag.obj = bam.test.obj,
 	barcodes.file = paste0("data/samples/", opt$sample_name, "/outs/filtered_feature_bc_matrix/barcodes.tsv"))
 
+bam.test.obj <- CellTagDataForCollapsing(celltag.obj = bam.test.obj, output.file = paste0(OUTDIR, opt$whitelist_version, opt$save_progress_name, "_", opt$collapsing_name))
 
-bam.test.obj <- CellTagDataForCollapsing(celltag.obj = bam.test.obj, output.file = paste0(OUTDIR, opt$save_progress_name, "_", opt$collapsing_name))
-saveRDS(bam.test.obj, paste0(OUTDIR, opt$save_progress_name, ".RDS"))
+saveRDS(bam.test.obj, paste0(OUTDIR, opt$whitelist_version, opt$save_progress_name, ".RDS"))
