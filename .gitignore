@@ -35,5 +35,7 @@ data/out/*
 *.fa
 *.pdf
 *.html
+*.sam
+*__pycache__*
 .RData
 .Rhistory
