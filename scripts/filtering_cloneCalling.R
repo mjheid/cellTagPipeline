@@ -36,7 +36,7 @@ bam.test.obj <- SingleCellDataBinarization(bam.test.obj, opt$tagged)
 
 
 if (opt$visualize) {
-pdf(paste0(DIR, opt$save_progress_name, "_Metric_plots.pdf"))
+pdf(paste0(DIR, opt$whitelist_version, opt$save_progress_name, "_Metric_plots.pdf"))
 MetricPlots(bam.test.obj)
 dev.off()    
 }
@@ -50,7 +50,7 @@ bam.test.obj <- SingleCellDataWhitelist(bam.test.obj, opt$whitelist_path)
 # 5. Check metric plots after whitelist filtering
 # Recheck the metric similar to Step 3
 if (opt$visualize) {
-pdf(paste0(DIR, opt$save_progress_name, "_Metric_plots_after_whitelist_filtering.pdf"))
+pdf(paste0(DIR, opt$whitelist_version, opt$save_progress_name, "_Metric_plots_after_whitelist_filtering.pdf"))
 MetricPlots(bam.test.obj)
 dev.off()  
 }
@@ -67,7 +67,7 @@ bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$low_filter, comparison = 
 
 # 7. Last check of metric plots
 if (opt$visualize) {
-pdf(paste0(DIR, opt$save_progress_name, "_Metric_plots_after_whitelist_filtering_last_check.pdf"))
+pdf(paste0(DIR, opt$whitelist_version, opt$save_progress_name, "_Metric_plots_after_whitelist_filtering_last_check.pdf"))
 MetricPlots(bam.test.obj)
 dev.off()
 }
@@ -80,6 +80,6 @@ bam.test.obj <- JaccardAnalysis(bam.test.obj, fast = T)
 bam.test.obj <- CloneCalling(celltag.obj = bam.test.obj, correlation.cutoff=0.7)
 
 saveRDS(bam.test.obj, paste0(DIR, opt$save_progress_name, ".RDS"))
-saveRDS(bam.test.obj, paste0(OUTDIR, opt$whitelist_version, opt$save_progress_name, ".RDS"))
-write.csv(as.matrix(bam.test.obj@whitelisted.count), file=paste0(DIR, opt$save_progress_name, ".csv"))
+saveRDS(bam.test.obj, paste0(DIR, opt$whitelist_version, opt$save_progress_name, ".RDS"))
+write.csv(as.matrix(bam.test.obj@whitelisted.count), file=paste0(DIR, opt$whitelist_version, opt$save_progress_name, ".csv"))
 

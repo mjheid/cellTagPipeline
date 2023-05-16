@@ -37,3 +37,4 @@ bam.test.obj <- CellTagMatrixCount(celltag.obj = bam.test.obj,
 bam.test.obj <- CellTagDataForCollapsing(celltag.obj = bam.test.obj, output.file = paste0(OUTDIR, opt$whitelist_version, opt$save_progress_name, "_", opt$collapsing_name))
 
 saveRDS(bam.test.obj, paste0(OUTDIR, opt$whitelist_version, opt$save_progress_name, ".RDS"))
+saveRDS(bam.test.obj, paste0(OUTDIR, opt$save_progress_name, ".RDS"))

@@ -30,7 +30,7 @@ case $1 in
     ;;
   network)
   echo "scripts/network.R '${@:2}'" >> data/Log.log
-    sh scripts/network.R "${@:2}"
+    Rscript --vanilla scripts/network.R "${@:2}"
     ;;
   --help)
     usage

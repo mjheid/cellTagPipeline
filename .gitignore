@@ -36,6 +36,9 @@ data/out/*
 *.pdf
 *.html
 *.sam
+*.fai
+BAM
+SAM
 *__pycache__*
 .RData
 .Rhistory
