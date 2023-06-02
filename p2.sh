@@ -1,0 +1,2 @@
+./control.sh cellTag --visualize --save_progress_name "anika" --tagged 1 --low_filter 1 --bam_data "data/bam/possorted_genome_bam.filtered_merged.bam"  --whitelist_version "v1" --sample_name "SI-TT-H4"
+./control.sh map --visualize_umap --runUMAP --visualize_ver v1

@@ -26,6 +26,9 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list)
 opt = parse_args(opt_parser)
 
+tryCatch(
+{
+
 DIR <- opt$out
 
 bam.test.obj <- readRDS(paste0(DIR, opt$save_progress_name, ".RDS"))
@@ -81,5 +84,12 @@ bam.test.obj <- CloneCalling(celltag.obj = bam.test.obj, correlation.cutoff=0.7)
 
 saveRDS(bam.test.obj, paste0(DIR, opt$save_progress_name, ".RDS"))
 saveRDS(bam.test.obj, paste0(DIR, opt$whitelist_version, opt$save_progress_name, ".RDS"))
-write.csv(as.matrix(bam.test.obj@whitelisted.count), file=paste0(DIR, opt$whitelist_version, opt$save_progress_name, ".csv"))
 
+},
+error = function(err) {
+    # Print the error message
+    print(paste("Error:", conditionMessage(err)))
+    # Stop the execution of the program
+    stop("Exiting the program.")
+}
+)

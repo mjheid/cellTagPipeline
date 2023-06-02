@@ -31,8 +31,8 @@ whitelist_path1="data/whitelist/V1.CellTag.Whitelist.csv"
 whitelist_path2="data/whitelist/V2.CellTag.Whitelist.csv"
 whitelist_path3="data/whitelist/V3.CellTag.Whitelist.csv"
 high_filter=20
-low_filter=1
-tagged=1
+low_filter=2
+tagged=2
 visualize=false
 
 # Check if argument is provided
@@ -125,7 +125,7 @@ if [ "$whitelist_path" = "$whitelist_path1" ]; then
 fi
 
 echo "gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz" >> data/Log.log
-gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz
+gunzip data/samples/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz
 
 
 echo "Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version" >> data/Log.log
@@ -143,3 +143,6 @@ else
 echo "Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name '${save_progress_name}_${collapsing_name%.*}_result.txt' --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged" >> data/Log.log
 Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged
 fi
+
+echo "gzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv" >> data/Log.log
+gzip data/samples/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv

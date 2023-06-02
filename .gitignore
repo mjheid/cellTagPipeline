@@ -36,6 +36,8 @@ data/out/*
 *.pdf
 *.html
 *.sam
+*.txt
+*.RDS
 *.fai
 BAM
 SAM
