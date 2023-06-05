@@ -38,6 +38,7 @@ data/out/*
 *.sam
 *.txt
 *.RDS
+*.test
 *.fai
 BAM
 SAM

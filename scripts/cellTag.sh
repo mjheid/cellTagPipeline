@@ -128,8 +128,8 @@ echo "gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz" 
 gunzip data/samples/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz
 
 
-echo "Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version" >> data/Log.log
-Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version
+echo "Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version --sample_name $sample_name" >> data/Log.log
+Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version --sample_name $sample_name
 
 
 echo "starcode -s --print-clusters $out${whitelist_version}${save_progress_name}_$collapsing_name > $out${whitelist_version}${save_progress_name}_${collapsing_name%.*}_result.txt" >> data/Log.log

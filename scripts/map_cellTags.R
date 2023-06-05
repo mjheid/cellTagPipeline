@@ -12,6 +12,8 @@ option_list = list(
               help="Run UMAP"),
     make_option(c("--runTSNE"), action="store_true", default=FALSE, 
               help="Run TSNE"),
+    make_option(c("--filter"), action="store_true", default=FALSE, 
+              help="Filter data"),
     make_option(c("--visualize_ver"), type="character", default="all", 
               help="visualize specified version, either v1, v2, v3 or all.", metavar="character"),
     make_option(c("--out"), type="character", default="data/out/", 
@@ -144,7 +146,7 @@ if (file.exists(paste0(opt$out, "v3", opt$save_progress_name, ".RDS"))) {
 
 if (file.exists(paste0(opt$out, opt$save_progress_name, "_reduction.RDS"))) {
     pbmc = readRDS(paste0(opt$out, opt$save_progress_name, "_reduction.RDS"))
-} else {
+} else if (opt$filter) {
     pbmc.data <- Read10X(data.dir = paste0("data/samples/", opt$sample_name, "/outs/filtered_feature_bc_matrix/"))
     pbmc <- CreateSeuratObject(counts = pbmc.data, project = "test", min.cells = opt$min_cells, min.features = opt$min_features)
 
@@ -204,6 +206,7 @@ if (opt$visualize_umap) {
     plot_umap_with_specific_clone(pbmc, "v3", "umap", v3, v3_clones)
     }
     
+    
     if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
     plot_umap_clones(pbmc, "v1", "umap", v1, v1_clones)
     }
@@ -243,7 +246,7 @@ if (opt$visualize_umap) {
 }
 
 if (opt$visualize_tsne) {
-    f (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
+    if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
     pdf(paste0(opt$out, opt$save_progress_name, "_umap_v1.pdf"))
     g = DimPlot(pbmc, reduction = "tsne", cells.highlight=v1, cols.highlight= "red", cols = "gray")
     print(g)
