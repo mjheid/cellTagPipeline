@@ -1,0 +1,346 @@
+---
+title: "Report on the working CellTag pipeline"
+author: "Markus Heidrich"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(echo = TRUE, fig.width = 12, fig.height = 12)
+```
+
+## Report
+Show example run of tutorial data.
+
+## Setup
+
+### Load Libraries
+
+libraries required to run this report.
+
+```{r load-libraries}
+
+### Bioconductor and CRAN libraries used
+library(knitr)
+library(ggplot2)
+suppressMessages(library("CellTagR"))
+suppressMessages(library("Seurat"))
+suppressMessages(library("optparse"))
+```
+
+### Execution
+### Executing Pipeline on Tutorial Data
+To simplify we only show the needed part of the script to produce the figures.
+Scripts that got skipped are control.sh, scripts/cellTag.sh and scripts/cell.R .
+scripts/cell.R does the loading of the data.
+
+
+```{r, engine = 'bash', eval = FALSE}
+./control.sh cellTag --visualize --save_progress_name "original" --tagged 2 --low_filter 2 --bam_data "data/tutorial/hf1.d15.possorted_genome_bam.bam"  --whitelist_version "v1" --sample_name "og"
+./control.sh cellTag --visualize --save_progress_name "original" --tagged 2 --low_filter 2 --bam_data "data/tutorial/hf1.d15.possorted_genome_bam.bam"  --whitelist_version "v2" --sample_name "og"
+./control.sh cellTag --visualize --save_progress_name "original" --tagged 2 --low_filter 2 --bam_data "data/tutorial/hf1.d15.possorted_genome_bam.bam"  --whitelist_version "v3" --sample_name "og"
+./control.sh network --visualize --save_progress_name "original"
+```
+
+## Lib1
+
+```{r tut1}
+option_list = list(
+    make_option(c("--visualize"), action="store_true", default=TRUE, 
+              help="Visualize filtering"),
+    make_option(c("--out"), type="character", default="data/out/", 
+              help="output file dir", metavar="character"),
+    make_option(c("--collapsing_name"), type="character", default="collapsing_result.txt", 
+              help="Name of collapsing file", metavar="character"),
+    make_option(c("--save_progress_name"), type="character", default="original", 
+              help="Name appended to outputs to be saved", metavar="character"),
+    make_option(c("--whitelist_version"), type="character", default="v1", 
+                help="Version of whitelist", metavar="character"),
+    make_option(c("--whitelist_path"), type="character", default="data/whitelist/V1.CellTag.Whitelist.csv", 
+              help="Path of whitelist", metavar="character"),
+    make_option(c("--high_filter"),  default=20, 
+              help="Upper bound for filtering celltags", metavar="int"),
+    make_option(c("--low_filter"),  default=1, 
+              help="Lower bound for filtering celltags", metavar="int"),
+    make_option(c("--tagged"),  default=1, 
+              help="When binarizing, the number of cellTags needed to consider cell as tagged", metavar="int")
+)
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+DIR <- opt$out
+
+bam.test.obj <- readRDS("data/out/v1original.RDS")
+
+bam.test.obj <- CellTagDataPostCollapsing(celltag.obj = bam.test.obj, collapsed.rslt.file = "data/out/v1original_collapsing_result.txt")
+
+bam.test.obj <- SingleCellDataBinarization(bam.test.obj, opt$tagged)
+
+
+
+p = MetricPlots(bam.test.obj)
+print(p)
+
+
+
+# 4. Apply the whitelisted CellTags generated from assessment
+bam.test.obj <- SingleCellDataWhitelist(bam.test.obj, opt$whitelist_path)
+
+
+# 5. Check metric plots after whitelist filtering
+# Recheck the metric similar to Step 3
+p = MetricPlots(bam.test.obj)
+print(p)
+
+
+
+# 6. Additional filtering
+# Filter out cells with more than 20 CellTags
+bam.test.obj@metric.filtered.count <- as(matrix(NA, 0, 0), "dgCMatrix")
+bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$high_filter, comparison = "less")
+
+# Filter out cells with less than 2 CellTags
+bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$low_filter, comparison = "greater")
+
+
+# 7. Last check of metric plots
+p = MetricPlots(bam.test.obj)
+print(p)
+
+# 8. Clone Calling
+# I. Jaccard Analysis
+bam.test.obj <- JaccardAnalysis(bam.test.obj, fast = T)
+
+# Call clones
+bam.test.obj <- CloneCalling(celltag.obj = bam.test.obj, correlation.cutoff=0.7)
+
+```
+
+## Lib2
+
+```{r tut2}
+option_list = list(
+    make_option(c("--visualize"), action="store_true", default=TRUE, 
+              help="Visualize filtering"),
+    make_option(c("--out"), type="character", default="data/out/", 
+              help="output file dir", metavar="character"),
+    make_option(c("--collapsing_name"), type="character", default="collapsing_result.txt", 
+              help="Name of collapsing file", metavar="character"),
+    make_option(c("--save_progress_name"), type="character", default="original", 
+              help="Name appended to outputs to be saved", metavar="character"),
+    make_option(c("--whitelist_version"), type="character", default="v2", 
+                help="Version of whitelist", metavar="character"),
+    make_option(c("--whitelist_path"), type="character", default="data/whitelist/V2.CellTag.Whitelist.csv", 
+              help="Path of whitelist", metavar="character"),
+    make_option(c("--high_filter"),  default=20, 
+              help="Upper bound for filtering celltags", metavar="int"),
+    make_option(c("--low_filter"),  default=1, 
+              help="Lower bound for filtering celltags", metavar="int"),
+    make_option(c("--tagged"),  default=1, 
+              help="When binarizing, the number of cellTags needed to consider cell as tagged", metavar="int")
+)
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+DIR <- opt$out
+
+bam.test.obj <- readRDS("data/out/v2original.RDS")
+
+bam.test.obj <- CellTagDataPostCollapsing(celltag.obj = bam.test.obj, collapsed.rslt.file = "data/out/v2original_collapsing_result.txt")
+
+bam.test.obj <- SingleCellDataBinarization(bam.test.obj, opt$tagged)
+
+
+
+p = MetricPlots(bam.test.obj)
+print(p)
+
+
+
+# 4. Apply the whitelisted CellTags generated from assessment
+bam.test.obj <- SingleCellDataWhitelist(bam.test.obj, opt$whitelist_path)
+
+
+# 5. Check metric plots after whitelist filtering
+# Recheck the metric similar to Step 3
+p = MetricPlots(bam.test.obj)
+print(p)
+
+
+
+# 6. Additional filtering
+# Filter out cells with more than 20 CellTags
+bam.test.obj@metric.filtered.count <- as(matrix(NA, 0, 0), "dgCMatrix")
+bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$high_filter, comparison = "less")
+
+# Filter out cells with less than 2 CellTags
+bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$low_filter, comparison = "greater")
+
+
+# 7. Last check of metric plots
+p = MetricPlots(bam.test.obj)
+print(p)
+
+# 8. Clone Calling
+# I. Jaccard Analysis
+bam.test.obj <- JaccardAnalysis(bam.test.obj, fast = T)
+
+# Call clones
+bam.test.obj <- CloneCalling(celltag.obj = bam.test.obj, correlation.cutoff=0.7)
+
+```
+
+
+## Lib3
+
+```{r tut3}
+option_list = list(
+    make_option(c("--visualize"), action="store_true", default=TRUE, 
+              help="Visualize filtering"),
+    make_option(c("--out"), type="character", default="data/out/", 
+              help="output file dir", metavar="character"),
+    make_option(c("--collapsing_name"), type="character", default="collapsing_result.txt", 
+              help="Name of collapsing file", metavar="character"),
+    make_option(c("--save_progress_name"), type="character", default="original", 
+              help="Name appended to outputs to be saved", metavar="character"),
+    make_option(c("--whitelist_version"), type="character", default="v3", 
+                help="Version of whitelist", metavar="character"),
+    make_option(c("--whitelist_path"), type="character", default="data/whitelist/V3.CellTag.Whitelist.csv", 
+              help="Path of whitelist", metavar="character"),
+    make_option(c("--high_filter"),  default=20, 
+              help="Upper bound for filtering celltags", metavar="int"),
+    make_option(c("--low_filter"),  default=1, 
+              help="Lower bound for filtering celltags", metavar="int"),
+    make_option(c("--tagged"),  default=1, 
+              help="When binarizing, the number of cellTags needed to consider cell as tagged", metavar="int")
+)
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+DIR <- opt$out
+
+bam.test.obj <- readRDS("data/out/v3original.RDS")
+
+bam.test.obj <- CellTagDataPostCollapsing(celltag.obj = bam.test.obj, collapsed.rslt.file = "data/out/v3original_collapsing_result.txt")
+
+bam.test.obj <- SingleCellDataBinarization(bam.test.obj, opt$tagged)
+
+
+
+p = MetricPlots(bam.test.obj)
+print(p)
+
+
+
+# 4. Apply the whitelisted CellTags generated from assessment
+bam.test.obj <- SingleCellDataWhitelist(bam.test.obj, opt$whitelist_path)
+
+
+# 5. Check metric plots after whitelist filtering
+# Recheck the metric similar to Step 3
+p = MetricPlots(bam.test.obj)
+print(p)
+
+
+
+# 6. Additional filtering
+# Filter out cells with more than 20 CellTags
+bam.test.obj@metric.filtered.count <- as(matrix(NA, 0, 0), "dgCMatrix")
+bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$high_filter, comparison = "less")
+
+# Filter out cells with less than 2 CellTags
+bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$low_filter, comparison = "greater")
+
+
+# 7. Last check of metric plots
+p = MetricPlots(bam.test.obj)
+print(p)
+
+# 8. Clone Calling
+# I. Jaccard Analysis
+bam.test.obj <- JaccardAnalysis(bam.test.obj, fast = T)
+
+# Call clones
+bam.test.obj <- CloneCalling(celltag.obj = bam.test.obj, correlation.cutoff=0.7)
+
+```
+
+As we can see, we find cellTags for all 3 libraries.
+Now we construct the network. This sadly will not be shown here, but in a seperate .html
+
+
+```{r network}
+option_list = list(
+    make_option(c("--visualize"), action="store_true", default=TRUE, 
+              help="Visualize filtering"),
+    make_option(c("--out"), type="character", default="data/out/", 
+              help="output file dir", metavar="character"),
+    make_option(c("--start_node"), type="character", default="BiggestNode", 
+              help="Start node to build Graph from.", metavar="character"),
+    make_option(c("--save_progress_name"), type="character", default="original", 
+              help="Name appended to outputs to be saved", metavar="character")
+)
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+
+DIR <- opt$out
+
+# Read the RDS file and get the object
+bam.test.obj <- readRDS(paste0(DIR, opt$save_progress_name, ".RDS"))
+
+if (file.exists(paste0(DIR, "v1", opt$save_progress_name, ".RDS"))) {
+    bam.v1.obj <- readRDS(paste0(DIR, "v1", opt$save_progress_name, ".RDS"))
+    bam.test.obj@clone.composition$v1 = bam.v1.obj@clone.composition$v1
+}
+if (file.exists(paste0(DIR, "v2", opt$save_progress_name, ".RDS"))) {
+    bam.v2.obj <- readRDS(paste0(DIR, "v2", opt$save_progress_name, ".RDS"))
+    bam.test.obj@clone.composition$v2 = bam.v2.obj@clone.composition$v2
+}
+if (file.exists(paste0(DIR, "v3", opt$save_progress_name, ".RDS"))) {
+    bam.v3.obj <- readRDS(paste0(DIR, "v3", opt$save_progress_name, ".RDS"))
+    bam.test.obj@clone.composition$v3 = bam.v3.obj@clone.composition$v3
+}
+
+bam.test.obj <- convertCellTagMatrix2LinkList(bam.test.obj)
+
+bam.test.obj <- getNodesfromLinkList(bam.test.obj)
+
+# Network Visualization
+if (opt$start_node == "BiggestNode") {
+    # Grab all unique source noes and how often they appear, order them, and use the first one to drawSubnet
+    tmp = table(bam.test.obj@network.link.list$source)
+    start_nodes = names(tmp)[order(-tmp)]
+    bam.test.obj <- drawSubnet(tag = start_nodes[1], overlay = "tag", celltag.obj = bam.test.obj)
+} else {
+    bam.test.obj <- drawSubnet(tag = opt$start_node, overlay = "tag", celltag.obj = bam.test.obj)
+}
+saveNetwork(bam.test.obj@network, "data/out/tut_network.construction.html")
+
+# Get the data for ploting
+bar.data <- bam.test.obj@celltag.aggr.final
+
+# Reshape the data to long format
+bar.data <- bar.data %>%
+  rownames_to_column(var = "uniqueID") %>%
+  gather(key = "CellTag", value = "Clone", -uniqueID, na.rm = FALSE)
+
+# Create a mapping dataframe for the lines
+bar.data$CellTag <- factor(bar.data$CellTag)
+bar.data$Clone <- factor(bar.data$Clone)
+
+# Using ggplot to plot
+# Plot the bar chart
+p <- ggplot(data = bar.data) + 
+  geom_bar(mapping = aes(x = CellTag, fill = factor(Clone)), position = "fill", show.legend = FALSE) + 
+  scale_y_continuous(labels = scales::percent_format()) +
+  theme_bw()
+
+
+print(p)
+
+```

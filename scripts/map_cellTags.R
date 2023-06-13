@@ -18,6 +18,8 @@ option_list = list(
               help="visualize specified version, either v1, v2, v3 or all.", metavar="character"),
     make_option(c("--out"), type="character", default="data/out/", 
               help="output file dir", metavar="character"),
+    make_option(c("--gene_list"), type="character", default="empty", 
+              help="gene list file location and name", metavar="character"),
     make_option(c("--vis_clone"),  default=1, 
               help="Clone to visualize.", metavar="int"),
     make_option(c("--min_cells"),  default=3, 
@@ -122,6 +124,49 @@ plot_umap_clones <- function(pbmc, version, method, subset, subset_clust) {
 }
 
 
+plot_gene_plus_cellTag <- function(pbmc, version, method, subset, gene_sp) {
+    # Create a data frame with reduction values from Seurat object
+    if  (method=="umap") {
+        df <- as.data.frame(pbmc@reductions$umap@cell.embeddings)
+    } else if (method=="tsne") {
+        df <- as.data.frame(pbmc@reductions$tsne@cell.embeddings)
+    }
+    
+    df$barcode = rownames(df)
+    
+    gene = FetchData(pbmc, vars=gene_sp)
+    gene$barcode = rownames(gene)
+    filtered_gene_count = gene[gene$barcode %in% subset, ]
+    
+    pos_filtered_gene_count = df[rownames(df) %in% rownames(filtered_gene_count), ]
+    df = df[!rownames(df) %in% rownames(filtered_gene_count), ]
+    
+    pos_filtered_gene_count = merge(pos_filtered_gene_count, filtered_gene_count, by="barcode")
+    pos_filtered_gene_count$gene_count = pos_filtered_gene_count[, 4]
+
+    # Plot the UMAP values with colored subsets
+    if  (method=="umap") {
+        p = ggplot(data = df, aes(UMAP_1, UMAP_2)) +
+                geom_point(color = "gray")
+        p = p + geom_point(data = pos_filtered_gene_count, aes(UMAP_1, UMAP_2, color = gene_count)) +
+                  scale_color_gradient(low = "lightblue", high = "darkblue")+
+                  labs(color = paste0("CellTags with ", gene_sp))
+        print(p)
+    } else if (method=="tsne") {
+        p = ggplot(data = df, aes(TSNE_1, TSNE_2)) +
+                geom_point(color = "gray")
+        p = p + geom_point(data = pos_filtered_gene_count, aes(TSNE_1, TSNE_2, color = gene_count)) +
+                  scale_color_gradient(low = "lightblue", high = "darkblue")+
+                  labs(color = paste0("CellTags with ", gene_sp))
+        print(p)
+    }
+
+    # Save the plot as an image file
+    ggsave(paste0(opt$out, opt$save_progress_name, "_", method,  "_", version,  
+            "_", gene_sp, ".pdf"), p, width = 6, height = 6, dpi = 0.1)
+}
+    
+    
 
 bam.test.obj <- readRDS(paste0(opt$out, opt$save_progress_name, ".RDS"))
 
@@ -242,6 +287,45 @@ if (opt$visualize_umap) {
     # Save the plot as an image file
     ggsave(paste0(opt$out, opt$save_progress_name, "_umap.pdf"), plot, width = 6, height = 6, dpi = 1)
     }
+    
+    #Plot specific gene abundance
+    if (file.exists(opt$gene_list)) {
+        # Read the file and store the gene data into a data frame
+        gene_data <- read.table(opt$gene_list, header = FALSE, sep = "\t")
+
+        # Combine the gene columns into a vector
+        genes <- unlist(gene_data)
+
+        # Iterate over the genes in a for loop
+        for (gene in genes) {
+            tryCatch ({
+            # Location of gene activation in umap or tnse
+            
+            pdf(paste0(opt$out, opt$save_progress_name, "_", gene, "_umap.pdf"))
+            g = FeaturePlot(pbmc, features = c(gene), reduction = "umap")
+            print(g)
+            dev.off()
+            
+            
+            if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
+            plot_gene_plus_cellTag(pbmc, "v1", "umap", v1, gene)
+            }
+            if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
+            plot_gene_plus_cellTag(pbmc, "v2", "umap", v2, gene)
+            }
+            if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
+            plot_gene_plus_cellTag(pbmc, "v3", "umap", v3, gene)
+            }
+            
+            },
+            error = function(err) {
+                # Print the error message
+                print(paste("Error:", conditionMessage(err)))
+            })
+
+        }
+
+    }
 
 }
 
@@ -312,8 +396,45 @@ if (opt$visualize_tsne) {
     # Save the plot as an image file
     ggsave(paste0(opt$out, opt$save_progress_name, "_umap.pdf"), plot, width = 6, height = 6, dpi = 1)
     }
+    
+    #Plot specific gene abundance
+    if (file.exists(opt$gene_list)) {
+        # Read the file and store the gene data into a data frame
+        gene_data <- read.table(opt$gene_list, header = FALSE, sep = "\t")
+
+        # Combine the gene columns into a vector
+        genes <- unlist(gene_data)
+
+        # Iterate over the genes in a for loop
+        for (gene_sp in genes) {
+            tryCatch ({
+            # Location of gene activation in umap or tnse
+            pdf(paste0(opt$out, opt$save_progress_name, "_", gene_sp, "_umap.pdf"))
+            g = FeaturePlot(pbmc, features = c(gene_sp), reduction = "tsne")
+            print(g)
+            dev.off()
+            
+            if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
+            plot_gene_plus_cellTag(pbmc, "v1", "tsne", v1, gene_sp)
+            }
+            if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
+            plot_gene_plus_cellTag(pbmc, "v2", "tsne", v2, gene_sp)
+            }
+            if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
+            plot_gene_plus_cellTag(pbmc, "v3", "tsne", v3, gene_sp)
+            }
+            
+            },
+            error = function(err) {
+                # Print the error message
+                print(paste("Error:", conditionMessage(err)))
+            })
+        }
+
+    }
 }
 
+    
 },
 error = function(err) {
     # Print the error message
