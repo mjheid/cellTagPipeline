@@ -1240,7 +1240,15 @@ if (TRUE) {
 <pre class="r"><code> print_cellTag = function(object) {
             cat(&quot;Object name: &quot;, object@obj.name, &quot;\n&quot;)
             cat(&quot;Library version: &quot;, object@curr.version, &quot;\n&quot;)
-            cat(&quot;Raw CellTag Counts = &quot;, (ncol(object@raw.count)), &quot;\n&quot;)
+            
+            curr.mtx &lt;- slot(object, &quot;raw.count&quot;)
+            curr.version &lt;- object@curr.version
+            curr.mtx.sub &lt;- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) &lt;- gsub(pattern = paste0(curr.version, &quot;.&quot;), replacement = &quot;&quot;, colnames(curr.mtx.sub))
+            valid_cols &lt;- !(Matrix::colSums(curr.mtx.sub != 0, na.rm = TRUE) == 0 &amp; Matrix::colSums(!is.na(curr.mtx.sub)) == 0)
+            full.mtx.sub &lt;- curr.mtx.sub[, valid_cols]
+            cat(&quot;Unique Raw CellTag Counts = &quot;, (ncol(full.mtx.sub)), &quot;\n&quot;)
+            cat(&quot;Raw CellTag Counts = &quot;, (sum(full.mtx.sub, na.rm = TRUE)), &quot;\n&quot;)
             
             curr.mtx &lt;- slot(object, &quot;raw.count&quot;)
             curr.version &lt;- object@curr.version
@@ -1249,9 +1257,23 @@ if (TRUE) {
             full.mtx.sub &lt;- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
             cat(&quot;Raw Number of Cells with CellTag = &quot;, nrow(full.mtx.sub), &quot;\n&quot;)
             
-            cat(&quot;Collapsed CellTag Counts = &quot;, ncol(object@collapsed.count), &quot;\n&quot;)
+            curr.mtx &lt;- slot(object, &quot;collapsed.count&quot;)
+            curr.version &lt;- object@curr.version
+            curr.mtx.sub &lt;- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) &lt;- gsub(pattern = paste0(curr.version, &quot;.&quot;), replacement = &quot;&quot;, colnames(curr.mtx.sub))
+            valid_cols &lt;- !(Matrix::colSums(curr.mtx.sub != 0, na.rm = TRUE) == 0 &amp; Matrix::colSums(!is.na(curr.mtx.sub)) == 0)
+            full.mtx.sub &lt;- curr.mtx.sub[, valid_cols]
+            cat(&quot;Unique Collapsed CellTag Counts = &quot;, ncol(full.mtx.sub), &quot;\n&quot;)
+            cat(&quot;Collapsed CellTag Counts = &quot;, sum(full.mtx.sub, na.rm = TRUE), &quot;\n&quot;)
             
-            cat(&quot;Whitelisted CellTag Counts = &quot;, (ncol(object@whitelisted.count)), &quot;\n&quot;)
+            curr.mtx &lt;- slot(object, &quot;whitelisted.count&quot;)
+            curr.version &lt;- object@curr.version
+            curr.mtx.sub &lt;- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) &lt;- gsub(pattern = paste0(curr.version, &quot;.&quot;), replacement = &quot;&quot;, colnames(curr.mtx.sub))
+            valid_cols &lt;- !(Matrix::colSums(curr.mtx.sub != 0, na.rm = TRUE) == 0 &amp; Matrix::colSums(!is.na(curr.mtx.sub)) == 0)
+            full.mtx.sub &lt;- curr.mtx.sub[, valid_cols]
+            cat(&quot;Unique Whitelisted CellTag Counts = &quot;, (ncol(full.mtx.sub)), &quot;\n&quot;)
+            cat(&quot;Whitelisted CellTag Counts = &quot;, (sum(full.mtx.sub, na.rm = TRUE)), &quot;\n&quot;)
             
             curr.mtx &lt;- slot(object, &quot;whitelisted.count&quot;)
             curr.version &lt;- object@curr.version
@@ -1260,7 +1282,14 @@ if (TRUE) {
             full.mtx.sub &lt;- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
             cat(&quot;Whitelisted Number of Cells with CellTag = &quot;, nrow(full.mtx.sub), &quot;\n&quot;)
             
-            cat(&quot;Filtered CellTag Counts = &quot;, (ncol(object@whitelisted.count)), &quot;\n&quot;)
+            curr.mtx &lt;- slot(object, &quot;metric.filtered.count&quot;)
+            curr.version &lt;- object@curr.version
+            curr.mtx.sub &lt;- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) &lt;- gsub(pattern = paste0(curr.version, &quot;.&quot;), replacement = &quot;&quot;, colnames(curr.mtx.sub))
+            valid_cols &lt;- !(Matrix::colSums(curr.mtx.sub != 0, na.rm = TRUE) == 0 &amp; Matrix::colSums(!is.na(curr.mtx.sub)) == 0)
+            full.mtx.sub &lt;- curr.mtx.sub[, valid_cols]
+            cat(&quot;Unique Filtered CellTag Counts = &quot;, (ncol(full.mtx.sub)), &quot;\n&quot;)
+            cat(&quot;Filtered CellTag Counts = &quot;, (sum(full.mtx.sub, na.rm = TRUE)), &quot;\n&quot;)
             
             curr.mtx &lt;- slot(object, &quot;metric.filtered.count&quot;)
             curr.version &lt;- object@curr.version
@@ -1274,16 +1303,19 @@ if (TRUE) {
             print(&quot;Number of clones per unique clone = &quot;)
             print(table(object@clone.composition$v1$clone.id))
 }
-
 print_cellTag(bam.test.obj)</code></pre>
 <pre><code>## Object name:  bam.cell.tag.obj 
 ## Library version:  v1 
-## Raw CellTag Counts =  1970 
+## Unique Raw CellTag Counts =  1970 
+## Raw CellTag Counts =  2339 
 ## Raw Number of Cells with CellTag =  1804 
-## Collapsed CellTag Counts =  1955 
-## Whitelisted CellTag Counts =  792 
+## Unique Collapsed CellTag Counts =  1955 
+## Collapsed CellTag Counts =  2339 
+## Unique Whitelisted CellTag Counts =  792 
+## Whitelisted CellTag Counts =  988 
 ## Whitelisted Number of Cells with CellTag =  879 
-## Filtered CellTag Counts =  792 
+## Unique Filtered CellTag Counts =  792 
+## Filtered CellTag Counts =  988 
 ## Filtered Number of Cells with CellTag =  879 
 ## Number of identified clones =  230 
 ## Number of unique clones =  83 
