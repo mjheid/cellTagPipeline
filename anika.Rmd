@@ -171,7 +171,7 @@ We first load all sequences from a specified library, and prepare the data for c
 
 ```{r cell, eval = FALSE}
 option_list = list(
-    make_option(c("--out"), type="character", default="data/out/", 
+    make_option(c("--out"), type="character", default="data/out/anika/", 
                 help="output file dir", metavar="character"),
     make_option(c("--collapsing_name"), type="character", default="collapsing.txt", 
                 help="Name of collapsing file", metavar="character"),
@@ -230,7 +230,7 @@ We create some plots while filtering to show what happens.
 option_list = list(
     make_option(c("--visualize"), action="store_true", default=FALSE, 
               help="Visualize filtering"),
-    make_option(c("--out"), type="character", default="data/out/", 
+    make_option(c("--out"), type="character", default="data/out/anika/", 
               help="output file dir", metavar="character"),
     make_option(c("--collapsing_name"), type="character", default="collapsing_result.txt", 
               help="Name of collapsing file", metavar="character"),
@@ -251,17 +251,90 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list)
 opt = parse_args(opt_parser)
 
+
+GetCellTagCurrentVersionWorkingMatrix <- function(celltag.obj, slot.to.select) {
+  curr.mtx <- slot(celltag.obj, slot.to.select)
+  if (nrow(curr.mtx) <= 0) {
+    return(curr.mtx)
+  } else {
+    curr.version <- celltag.obj@curr.version
+    curr.mtx.sub <- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+colnames(curr.mtx.sub) <- gsub(pattern = paste0(curr.version, "."), replacement = "", colnames(curr.mtx.sub))
+full.mtx.sub <- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
+    
+    return(full.mtx.sub)
+  }
+}
+
+
+MyMetricPlots <- function(celltag.obj) {
+  
+      obj.metric.filtered.count <- GetCellTagCurrentVersionWorkingMatrix(celltag.obj, "metric.filtered.count")
+      obj.whitelisted.count <- GetCellTagCurrentVersionWorkingMatrix(celltag.obj, "whitelisted.count")
+
+      if (ncol(obj.metric.filtered.count) <= 0) {
+        if (ncol(obj.whitelisted.count) <= 0) {
+          celltag.data <- GetCellTagCurrentVersionWorkingMatrix(celltag.obj, "binary.mtx")
+        } else {
+          celltag.data <- obj.whitelisted.count
+        }
+      } else {
+        celltag.data <- obj.metric.filtered.count
+      }
+
+      CellTags.per.cell.whitelisted.pf <- Matrix::rowSums(celltag.data)
+      CellTags.per.cell.avg <- mean(CellTags.per.cell.whitelisted.pf)
+      CellTags.frequency.whitelisted.pf <- Matrix::colSums(celltag.data)
+      CellTags.freq.avg <- mean(CellTags.frequency.whitelisted.pf)
+
+      g = plot(CellTags.per.cell.whitelisted.pf, main = "CellTag Counts of Individual Cells", xlab = "Cell Index", ylab = "CellTag Counts")
+      print(g)
+      g = plot(CellTags.frequency.whitelisted.pf, main = "CellTag Occurrence Frequency Across All Cells", xlab = "Cell Index", ylab = "CellTag Frequency")
+      print(g)
+
+      hist_data <- hist(CellTags.per.cell.whitelisted.pf, plot = FALSE)
+      counts = hist_data$counts
+      midpoints = seq(1, length(counts))
+      midpoints = midpoints[!counts==0]
+      counts = counts[!counts==0]
+      hist_df <- data.frame(counts = counts, midpoints=midpoints)
+      g <- ggplot(hist_df, aes(x = factor(midpoints), y = counts)) +
+              geom_bar(stat = "identity") +
+              labs(x = "CellTag Counts", y = "Count") +
+              ggtitle("Histogram of CellTag Counts of Individual Cells")
+      print(g)
+      
+      
+      hist_data <- hist(CellTags.frequency.whitelisted.pf, plot = FALSE)
+      counts <- hist_data$counts
+      midpoints <- hist_data$mids
+      midpoints <- midpoints[counts != 0]
+      counts <- counts[counts != 0]
+      hist_df <- data.frame(counts = counts, midpoints = midpoints)
+
+      # Create the histogram plot using ggplot
+      g <- ggplot(hist_df, aes(x = factor(midpoints), y = counts)) +
+        geom_bar(stat = "identity") +
+        labs(x = "CellTag Occurrence Frequency", y = "Count") +
+        ggtitle("Histogram of CellTag Occurrence Frequency Across All Cells")
+
+      # Print the plot
+      print(g)
+      
+      cat("Average: ", CellTags.per.cell.avg, "\n")
+      cat("Frequency: ", CellTags.freq.avg, "\n")
+}
+
 DIR <- opt$out
 
-bam.test.obj <- readRDS("data/out/v1anika.RDS")
+bam.test.obj <- readRDS("data/out/anika/v1anika.RDS")
 
-bam.test.obj <- CellTagDataPostCollapsing(celltag.obj = bam.test.obj, collapsed.rslt.file = "data/out/v1anika_collapsing_result.txt")
+bam.test.obj <- CellTagDataPostCollapsing(celltag.obj = bam.test.obj, collapsed.rslt.file = "data/out/anika/v1anika_collapsing_result.txt")
 
 bam.test.obj <- SingleCellDataBinarization(bam.test.obj, opt$tagged)
 
 
-p = MetricPlots(bam.test.obj)
-print(p)
+MyMetricPlots(bam.test.obj)
 
 
 # 4. Apply the whitelisted CellTags generated from assessment
@@ -270,8 +343,7 @@ bam.test.obj <- SingleCellDataWhitelist(bam.test.obj, opt$whitelist_path)
 
 # 5. Check metric plots after whitelist filtering
 # Recheck the metric similar to Step 3
-p = MetricPlots(bam.test.obj)
-print(p)
+MyMetricPlots(bam.test.obj)
 
 
 
@@ -285,12 +357,11 @@ bam.test.obj <- MetricBasedFiltering(bam.test.obj, opt$low_filter, comparison = 
 
 
 # 7. Last check of metric plots
-p = MetricPlots(bam.test.obj)
-print(p)
+MyMetricPlots(bam.test.obj)
 
 # 8. Clone Calling
 # I. Jaccard Analysis
-bam.test.obj <- JaccardAnalysis(bam.test.obj, fast = T)
+bam.test.obj <- JaccardAnalysis(bam.test.obj, fast=TRUE)
 
 # Call clones
 bam.test.obj <- CloneCalling(celltag.obj = bam.test.obj, correlation.cutoff=0.7)
@@ -345,7 +416,7 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list)
 opt = parse_args(opt_parser)
 
-plot_umap_with_specific_clone <- function(pbmc, version, method, subset, subset_clust) {
+plot_umap_with_specific_clone <- function(pbmc, version, method, subset, subset_clust, clone) {
     # Create a data frame with reduction values from Seurat object
     if  (method=="umap") {
         red_df <- as.data.frame(pbmc@reductions$umap@cell.embeddings)
@@ -355,10 +426,10 @@ plot_umap_with_specific_clone <- function(pbmc, version, method, subset, subset_
     
     red_df$subset <- "Not specified Cells"
     
-    subset = subset[subset_clust==opt$vis_clone]
+    subset = subset[subset_clust==clone]
     
     # Assign colors to subsets in the data frame
-    red_df$subset[rownames(red_df) %in% subset] <- paste0("Clone ", opt$vis_clone)
+    red_df$subset[rownames(red_df) %in% subset] <- paste0("Clone ", clone)
     red_df$alpha <- 1
     red_df$alpha[!rownames(red_df) %in% subset] <- NA
 
@@ -416,17 +487,17 @@ plot_umap_clones <- function(pbmc, version, method, subset, subset_clust) {
 
 
 
-bam.test.obj <- readRDS("data/out/anika.RDS")
+bam.test.obj <- readRDS("data/out/anika/anika.RDS")
 
-if (file.exists("data/out/v1anika.RDS")) {
-    bam.v1.obj <- readRDS("data/out/v1anika.RDS")
+if (file.exists("data/out/anika/v1anika.RDS")) {
+    bam.v1.obj <- readRDS("data/out/anika/v1anika.RDS")
     bam.test.obj@clone.composition$v1 = bam.v1.obj@clone.composition$v1
     v1 = bam.test.obj@clone.composition$v1$cell.barcode
     v1_clones = bam.test.obj@clone.composition$v1$clone.id
 }
 
-if (file.exists("data/out/anika_reduction.RDS")) {
-    pbmc = readRDS("data/out/anika_reduction.RDS")
+if (file.exists("data/out/anika/anika_reduction.RDS")) {
+    pbmc = readRDS("data/out/anika/anika_reduction.RDS")
 } else if (opt$filter) {
     pbmc.data <- Read10X(data.dir = paste0("data/samples/", opt$sample_name, "/outs/filtered_feature_bc_matrix/"))
     pbmc <- CreateSeuratObject(counts = pbmc.data, project = "test", min.cells = opt$min_cells, min.features = opt$min_features)
@@ -459,13 +530,54 @@ if (TRUE) {
     g = DimPlot(pbmc, reduction = "umap", cells.highlight=v1, cols.highlight= "red", cols = "gray")
     print(g)
     
-    plot_umap_with_specific_clone(pbmc, "v1", "umap", v1, v1_clones)
+    plot_umap_with_specific_clone(pbmc, "v1", "umap", v1, v1_clones, 9)
+    plot_umap_with_specific_clone(pbmc, "v1", "umap", v1, v1_clones, 13)
+    
     
     plot_umap_clones(pbmc, "v1", "umap", v1, v1_clones)
 
 }
 
-print(bam.test.obj)
+ print_cellTag = function(object) {
+            cat("Object name: ", object@obj.name, "\n")
+            cat("Library version: ", object@curr.version, "\n")
+            cat("Raw CellTag Counts = ", (ncol(object@raw.count)), "\n")
+            
+            curr.mtx <- slot(object, "raw.count")
+            curr.version <- object@curr.version
+            curr.mtx.sub <- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) <- gsub(pattern = paste0(curr.version, "."), replacement = "", colnames(curr.mtx.sub))
+            full.mtx.sub <- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
+            cat("Raw Number of Cells with CellTag = ", nrow(full.mtx.sub), "\n")
+            
+            cat("Collapsed CellTag Counts = ", ncol(object@collapsed.count), "\n")
+            
+            cat("Whitelisted CellTag Counts = ", (ncol(object@whitelisted.count)), "\n")
+            
+            curr.mtx <- slot(object, "whitelisted.count")
+            curr.version <- object@curr.version
+            curr.mtx.sub <- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) <- gsub(pattern = paste0(curr.version, "."), replacement = "", colnames(curr.mtx.sub))
+            full.mtx.sub <- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
+            cat("Whitelisted Number of Cells with CellTag = ", nrow(full.mtx.sub), "\n")
+            
+            cat("Filtered CellTag Counts = ", (ncol(object@whitelisted.count)), "\n")
+            
+            curr.mtx <- slot(object, "metric.filtered.count")
+            curr.version <- object@curr.version
+            curr.mtx.sub <- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) <- gsub(pattern = paste0(curr.version, "."), replacement = "", colnames(curr.mtx.sub))
+            full.mtx.sub <- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
+            cat("Filtered Number of Cells with CellTag = ", nrow(full.mtx.sub), "\n")
+            
+            cat("Number of identified clones = ", length(object@clone.composition$v1$cell.barcode), "\n")
+            cat("Number of unique clones = ", length(unique(object@clone.composition$v1$clone.id)), "\n")
+            print("Number of clones per unique clone = ")
+            print(table(object@clone.composition$v1$clone.id))
+}
+
+print_cellTag(bam.test.obj)
+            
 ```
 
 As we cann see, the cellTags of the first library are all over the place. This reinforces the result Yuan had as well.

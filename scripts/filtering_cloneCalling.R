@@ -29,6 +29,45 @@ opt = parse_args(opt_parser)
 tryCatch(
 {
 
+print_cellTag = function(object) {
+            cat("Object name: ", object@obj.name, "\n")
+            cat("Library version: ", object@curr.version, "\n")
+            cat("Raw CellTag Counts = ", (ncol(object@raw.count)), "\n")
+            
+            curr.mtx <- slot(object, "raw.count")
+            curr.version <- object@curr.version
+            curr.mtx.sub <- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) <- gsub(pattern = paste0(curr.version, "."), replacement = "", colnames(curr.mtx.sub))
+            full.mtx.sub <- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
+            cat("Raw Number of Cells with CellTag = ", nrow(full.mtx.sub), "\n")
+            
+            cat("Collapsed CellTag Counts = ", ncol(object@collapsed.count), "\n")
+            
+            cat("Whitelisted CellTag Counts = ", (ncol(object@whitelisted.count)), "\n")
+            
+            curr.mtx <- slot(object, "whitelisted.count")
+            curr.version <- object@curr.version
+            curr.mtx.sub <- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) <- gsub(pattern = paste0(curr.version, "."), replacement = "", colnames(curr.mtx.sub))
+            full.mtx.sub <- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
+            cat("Whitelisted Number of Cells with CellTag = ", nrow(full.mtx.sub), "\n")
+            
+            cat("Filtered CellTag Counts = ", (ncol(object@whitelisted.count)), "\n")
+            
+            curr.mtx <- slot(object, "metric.filtered.count")
+            curr.version <- object@curr.version
+            curr.mtx.sub <- curr.mtx[, which(startsWith(colnames(curr.mtx), curr.version))]
+            colnames(curr.mtx.sub) <- gsub(pattern = paste0(curr.version, "."), replacement = "", colnames(curr.mtx.sub))
+            full.mtx.sub <- curr.mtx.sub[!(Matrix::rowSums(is.na(curr.mtx.sub)) == ncol(curr.mtx.sub) | Matrix::rowSums(curr.mtx.sub == 0) == ncol(curr.mtx.sub)),]
+            cat("Filtered Number of Cells with CellTag = ", nrow(full.mtx.sub), "\n")
+            
+            cat("Number of identified clones = ", length(object@clone.composition$v1$cell.barcode), "\n")
+            cat("Number of unique clones = ", length(unique(object@clone.composition$v1$clone.id)), "\n")
+            print("Number of clones per unique clone = \n")
+            print(table(object@clone.composition$v1$clone.id))
+}
+
+
 DIR <- opt$out
 
 bam.test.obj <- readRDS(paste0(DIR, opt$save_progress_name, ".RDS"))
@@ -77,10 +116,23 @@ dev.off()
 
 # 8. Clone Calling
 # I. Jaccard Analysis
-bam.test.obj <- JaccardAnalysis(bam.test.obj, fast = T)
+bam.test.obj <- JaccardAnalysis(bam.test.obj, fast = TRUE)
+
+'''
+doesnt work bc has to be not fast version of jaccard, but in that version there is a bug :)
+if (opt$visualize) {
+pdf(paste0(DIR, opt$whitelist_version, opt$save_progress_name, "_jaccard.pdf"))
+Jac = bam.test.obj@jaccard.mtx
+diag(Jac) <- 1
+corrplot(Jac, method="color", order="hclust", hclust.method ="ward.D2", cl.lim=c(0,1), tl.cex=0.1)
+dev.off()
+}
+'''
 
 # Call clones
 bam.test.obj <- CloneCalling(celltag.obj = bam.test.obj, correlation.cutoff=0.7)
+
+print_cellTag(bam.test.obj)
 
 saveRDS(bam.test.obj, paste0(DIR, opt$save_progress_name, ".RDS"))
 saveRDS(bam.test.obj, paste0(DIR, opt$whitelist_version, opt$save_progress_name, ".RDS"))
