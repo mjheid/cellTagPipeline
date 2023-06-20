@@ -114,7 +114,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 
-#Executing cellranger mkref, building a reference genome
+# Executing cellranger mkref, building a reference genome
 if $mkref; then
     conda_env=$(conda info --envs | grep \* | cut -d " "  -f 1)
     conda deactivate
@@ -136,7 +136,7 @@ if $mkref; then
 fi
 
 
-#Executing cellranger count
+# Executing cellranger count
 if $count; then
 
     conda_env=$(conda info --envs | grep \* | cut -d " "  -f 1)
@@ -165,7 +165,7 @@ if $count; then
     conda activate $conda_env
 fi
 
-#Filtering with samtools
+# Filtering with samtools
 if $filter_sam; then
 
     module load samtools/1.16.1

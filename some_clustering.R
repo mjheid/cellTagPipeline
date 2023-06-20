@@ -8,7 +8,6 @@ suppressMessages(library("Seurat"))
 suppressMessages(library("optparse"))
 dt.mtx.path <- system.file("extdata", "bam_v123_obj.Rds", package = "CellTagR")
 bam.test.obj <- readRDS(dt.mtx.path)
-'
 )
 dt.mtx.path <- system.file("extdata", "bam_v123_obj.Rds", package = "CellTagR")
 bam.test.obj <- readRDS(dt.mtx.path)

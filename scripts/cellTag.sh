@@ -124,18 +124,19 @@ if [ "$whitelist_path" = "$whitelist_path1" ]; then
     fi
 fi
 
+# gunzip barcodes if .gz
 echo "gunzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz" >> data/Log.log
 gunzip data/samples/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv.gz
 
-
+# Execute cell.R
 echo "Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version --sample_name $sample_name" >> data/Log.log
 Rscript --vanilla scripts/cell.R --out $out --bam_data $bam_data --collapsing_name $collapsing_name --save_progress_name $save_progress_name --whitelist_version $whitelist_version --sample_name $sample_name
 
-
+# Annalyse which celltags to collapse
 echo "starcode -s --print-clusters $out${whitelist_version}${save_progress_name}_$collapsing_name > $out${whitelist_version}${save_progress_name}_${collapsing_name%.*}_result.txt" >> data/Log.log
 starcode -s --print-clusters $out${whitelist_version}${save_progress_name}_$collapsing_name > $out${whitelist_version}${save_progress_name}_${collapsing_name%.*}_result.txt
 
-
+# Execute filtering_cloneCalling.R
 if $visualize; then
 echo "Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name '${save_progress_name}_${collapsing_name%.*}_result.txt' --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize" >> data/Log.log
 Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize
@@ -144,5 +145,6 @@ echo "Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing
 Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged
 fi
 
+# gzip barcodes if .tsv
 echo "gzip data/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv" >> data/Log.log
 gzip data/samples/$sample_name/outs/filtered_feature_bc_matrix/barcodes.tsv
