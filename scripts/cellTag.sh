@@ -33,6 +33,7 @@ whitelist_path3="data/whitelist/V3.CellTag.Whitelist.csv"
 high_filter=20
 low_filter=2
 tagged=2
+jac_cut=0.7
 visualize=false
 
 # Check if argument is provided
@@ -96,6 +97,11 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
+    --jac_cut)
+        jac_cut=$2
+        shift
+        shift
+        ;;
     --bamfilter)
         bamfilter=true
         shift
@@ -139,10 +145,10 @@ starcode -s --print-clusters $out${whitelist_version}${save_progress_name}_$coll
 # Execute filtering_cloneCalling.R
 if $visualize; then
 echo "Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name '${save_progress_name}_${collapsing_name%.*}_result.txt' --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize" >> data/Log.log
-Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize
+Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --visualize --jac_cut $jac_cut
 else
 echo "Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name '${save_progress_name}_${collapsing_name%.*}_result.txt' --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged" >> data/Log.log
-Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged
+Rscript --vanilla scripts/filtering_cloneCalling.R --out $out --collapsing_name "${save_progress_name}_${collapsing_name%.*}_result.txt" --save_progress_name $save_progress_name --whitelist_path $whitelist_path --whitelist_version $whitelist_version --high_filter $high_filter --low_filter $low_filter --tagged $tagged --jac_cut $jac_cut
 fi
 
 # gzip barcodes if .tsv

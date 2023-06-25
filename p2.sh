@@ -1,2 +1,2 @@
-#./control.sh cellTag --visualize --save_progress_name "anika" --tagged 1 --low_filter 1 --bam_data "data/bam/possorted_genome_bam.filtered_merged.bam"  --whitelist_version "v1" --sample_name "SI-TT-H4"
-./control.sh map --visualize_umap --runUMAP --visualize_ver v1 --save_progress_name "anika" --sample_name "SI-TT-H4" --min_cells 1 --min_features 2 --filter --gene_list "data/gene_list.txt"
+#./control.sh cellTag --visualize --save_progress_name "ct" --tagged 1 --low_filter 1 --bam_data "data/bam/possorted_genome_bam.filtered_merged.bam"  --whitelist_version "v1" --sample_name "SI-TT-H4" --out "data/out/cellTag/"
+./control.sh map --visualize_umap --runUMAP --visualize_ver "v1" --save_progress_name "ct" --sample_name "SI-TT-H4" --min_cells 3 --min_features 200 --filter --gene_list "data/gene_list.txt" --out "data/out/cellTag/" --vis_clone 9

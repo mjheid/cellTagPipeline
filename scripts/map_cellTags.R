@@ -2,6 +2,7 @@ suppressMessages(library("CellTagR"))
 suppressMessages(library("Seurat"))
 suppressMessages(library("optparse"))
 suppressMessages(library("ggplot2"))
+source("scripts/helperFunctions.R")
 
 # Command line options
 option_list = list(
@@ -15,6 +16,8 @@ option_list = list(
               help="Run TSNE"),
     make_option(c("--filter"), action="store_true", default=FALSE, 
               help="Filter data"),
+    make_option(c("--jackstraw"), action="store_true", default=FALSE, 
+              help="Use jackstraw to confirm PCs p-value, otherwise elbow plot"),
     make_option(c("--visualize_ver"), type="character", default="all", 
               help="visualize specified version, either v1, v2, v3 or all.", metavar="character"),
     make_option(c("--out"), type="character", default="data/out/", 
@@ -29,6 +32,8 @@ option_list = list(
               help="Minimum features count to load data.", metavar="int"),
     make_option(c("--scale_factor"),  default=10000, 
               help="Factor to scale cells with.", metavar="int"),
+    make_option(c("--npcs"),  default=100, 
+              help="Number of PCs to calculate.", metavar="int"),
     make_option(c("--n_var_features"),  default=2000, 
               help="Number of varible features to work with.", metavar="int"),
     make_option(c("--neighbours_dims"),  default=10, 
@@ -49,188 +54,32 @@ opt = parse_args(opt_parser)
 tryCatch(
 {
 
-    
-"""
-Plot  existing clone in dimension reduction plot.
-
-ct: Seurat obj; Contains dimension reduction data and more
-version: str; Library version of clone
-method: str, either umap or tsne, data reduction method
-subset: vector; contains cell barcodes of clones
-subset_clust: vector; contains cluster id of clones
-"""
-plot_umap_with_specific_clone = function(ct, version, method, subset, subset_clust) {
-    # Create a data frame with reduction values from Seurat object
-    if  (method=="umap") {
-        red_df = as.data.frame(ct@reductions$umap@cell.embeddings)
-    } else if (method=="tsne") {
-        red_df = as.data.frame(ct@reductions$tsne@cell.embeddings)
-    }
-    
-    # Creat subset column of dataframe and set it equal to Not specified Cells
-    red_df$subset = "Not specified Cells"
-    
-    # Set subset to clone cluster id for cell barcodes od corresponding cells
-    subset = subset[subset_clust==opt$vis_clone]
-    
-    # Assign colors to subsets in the data frame
-    red_df$subset[rownames(red_df) %in% subset] = paste0("Clone ", opt$vis_clone)
-    red_df$alpha <- 1
-    red_df$alpha[!rownames(red_df) %in% subset] = NA
-
-
-    # Plot the UMAP values with colored subsets
-    if  (method=="umap") {
-        plot = ggplot(red_df, aes(UMAP_1, UMAP_2, color = subset)) +
-          geom_point(alpha = ifelse(!is.na(red_df$alpha), 1, 0.1)) +
-          scale_color_manual(values = c("red", "grey")) +
-          labs(color = "CellTags")
-    } else if (method=="tsne") {
-        plot = ggplot(red_df, aes(TSNE_1, TSNE_2, color = subset)) +
-          geom_point(alpha = ifelse(!is.na(red_df$alpha), 1, 0.1)) +
-          scale_color_manual(values = c("red", "grey")) +
-          labs(color = "CellTags")
-    }
-
-    # Save the plot as an image file
-    ggsave(paste0(opt$out, opt$save_progress_name, "_", method,  "_", version,  
-                  "_", opt$vis_clone ,".pdf"), plot, width = 6, height = 6, dpi = 1)
-}
-
-
-"""
-Plot  all existing clones in dimension reduction plot.
-
-ct: Seurat obj; Contains dimension reduction data and more
-version: str; Library version of clone
-method: str, either umap or tsne, data reduction method
-subset: vector; contains cell barcodes of clones
-subset_clust: vector; contains cluster id of clones
-"""
-plot_umap_clones <- function(ct, version, method, subset, subset_clust) {
-    # Create a data frame with reduction values from Seurat object
-    if  (method=="umap") {
-        red_df = as.data.frame(ct@reductions$umap@cell.embeddings)
-    } else if (method=="tsne") {
-        red_df = as.data.frame(ct@reductions$tsne@cell.embeddings)
-    }
-    
-    # Creat subset column of dataframe and set it equal to Not specified Cells
-    red_df$subset = "Not specified Cells"
-    
-    # Set colour of all cells to 0. Cells subset get assigned their cluster id as colour.
-    red_df$col = 0
-    indices_sub = which(rownames(red_df) %in% subset)
-    red_df$col[indices_sub] = subset_clust
-    red_df$col = as.factor(red_df$col)
-    
-    # Set column subset eual to clone ID. TODO: Not needed here no?
-    red_df$subset[rownames(red_df) %in% subset] = paste0("Clone ", opt$vis_clone)
-    
-    #Set all cells who dont have a celltag to column alpha=1, otherwise NA
-    red_df$alpha = 1
-    red_df$alpha[!rownames(red_df) %in% subset] = NA
-
-
-    # Plot the UMAP values with colored subsets
-    if  (method=="umap") {
-        plot = ggplot(red_df, aes(UMAP_1, UMAP_2, color = col)) +
-          geom_point(alpha = ifelse(!is.na(red_df$alpha), 1, 0.1), show.legend = FALSE) +
-          scale_color_discrete() +
-          labs(color = "CellTags")
-    } else if (method=="tsne") {
-        plot = ggplot(red_df, aes(TSNE_1, TSNE_2, color = subset)) +
-          geom_point(alpha = ifelse(!is.na(red_df$alpha), 1, 0.1)) +
-          scale_color_discrete() +
-          labs(color = "CellTags")
-    }
-
-    # Save the plot as an image file
-    ggsave(paste0(opt$out, opt$save_progress_name, "_", method,  "_", version,  
-            "_allclones.pdf"), plot, width = 6, height = 6, dpi = 1)
-}
-
-
-"""
-Visualize gene count of specified gene in cell containing cellTags on dimension reduction plot.
-
-ct: Seurat obj; Contains dimension reduction data and more
-version: str; Library version of clone
-method: str, either umap or tsne, data reduction method
-subset: vector; contains cell barcodes of clones
-gene_sp: str; gene name to visualize abundance in clones
-"""
-plot_gene_plus_cellTag = function(ct, version, method, subset, gene_sp) {
-    # Create a data frame with reduction values from Seurat object
-    if  (method=="umap") {
-        df = as.data.frame(ct@reductions$umap@cell.embeddings)
-    } else if (method=="tsne") {
-        df = as.data.frame(ct@reductions$tsne@cell.embeddings)
-    }
-    
-    # Set barcode column equal to rownames of dataframe
-    df$barcode = rownames(df)
-    
-    # Fetch gene count of gene_sp, filter out all cell barcodes who are not in subset
-    gene = FetchData(ct, vars=gene_sp)
-    gene$barcode = rownames(gene)
-    filtered_gene_count = gene[gene$barcode %in% subset, ]
-    
-    # Partition df into dataframe that contain subset cell barcodes, and do not.
-    pos_filtered_gene_count = df[rownames(df) %in% rownames(filtered_gene_count), ]
-    df = df[!rownames(df) %in% rownames(filtered_gene_count), ]
-    
-    # Merge dataframe containing subset cell barcodes and gene count by cell barcode
-    # Name gene count column of resulting dataframe gene_count
-    pos_filtered_gene_count = merge(pos_filtered_gene_count, filtered_gene_count, by="barcode")
-    pos_filtered_gene_count$gene_count = pos_filtered_gene_count[, 4]
-
-    # Plot the UMAP values with colored subsets
-    if  (method=="umap") {
-        p = ggplot(data = df, aes(UMAP_1, UMAP_2)) +
-                geom_point(color = "gray")
-        p = p + geom_point(data = pos_filtered_gene_count, aes(UMAP_1, UMAP_2, color = gene_count)) +
-                  scale_color_gradient(low = "lightblue", high = "darkblue")+
-                  labs(color = paste0("CellTags with ", gene_sp))
-        print(p)
-    } else if (method=="tsne") {
-        p = ggplot(data = df, aes(TSNE_1, TSNE_2)) +
-                geom_point(color = "gray")
-        p = p + geom_point(data = pos_filtered_gene_count, aes(TSNE_1, TSNE_2, color = gene_count)) +
-                  scale_color_gradient(low = "lightblue", high = "darkblue")+
-                  labs(color = paste0("CellTags with ", gene_sp))
-        print(p)
-    }
-
-    # Save the plot as an image file
-    ggsave(paste0(opt$out, opt$save_progress_name, "_", method,  "_", version,  
-            "_", gene_sp, ".pdf"), p, width = 6, height = 6, dpi = 0.1)
-}
-    
-    
 # Read complete celltag obj of previous steps.
-bam.test.obj = readRDS(paste0(opt$out, opt$save_progress_name, ".RDS"))
+obj = readRDS(paste0(opt$out, opt$save_progress_name, ".RDS"))
 
 # If the pipeline has been run with library v1, load the version object and get clone cell barcodes and clone ids.
 if (file.exists(paste0(opt$out, "v1", opt$save_progress_name, ".RDS"))) {
-    bam.v1.obj = readRDS(paste0(opt$out, "v1", opt$save_progress_name, ".RDS"))
-    bam.test.obj@clone.composition$v1 = bam.v1.obj@clone.composition$v1
-    v1 = bam.test.obj@clone.composition$v1$cell.barcode
-    v1_clones = bam.test.obj@clone.composition$v1$clone.id
+    v1.obj = readRDS(paste0(opt$out, "v1", opt$save_progress_name, ".RDS"))
+    obj@clone.composition$v1 = v1.obj@clone.composition$v1
+    v1 = obj@clone.composition$v1$cell.barcode
+    v1_clones = obj@clone.composition$v1$clone.id
+    v1_c = rownames(v1.obj@jaccard.mtx)
 }
 # If the pipeline has been run with library v2, load the version object and get clone cell barcodes and clone ids.
 if (file.exists(paste0(opt$out, "v2", opt$save_progress_name, ".RDS"))) {
-    bam.v2.obj = readRDS(paste0(opt$out, "v2", opt$save_progress_name, ".RDS"))
-    bam.test.obj@clone.composition$v2 = bam.v2.obj@clone.composition$v2
-    v2 = bam.test.obj@clone.composition$v2$cell.barcode
-    v2_clones = bam.test.obj@clone.composition$v2$clone.id
+    v2.obj = readRDS(paste0(opt$out, "v2", opt$save_progress_name, ".RDS"))
+    obj@clone.composition$v2 = v2.obj@clone.composition$v2
+    v2 = obj@clone.composition$v2$cell.barcode
+    v2_clones = obj@clone.composition$v2$clone.id
+    v2_c = rownames(v2.obj@jaccard.mtx)
 }
 # If the pipeline has been run with library v3, load the version object and get clone cell barcodes and clone ids.
 if (file.exists(paste0(opt$out, "v3", opt$save_progress_name, ".RDS"))) {
-    bam.v3.obj = readRDS(paste0(opt$out, "v3", opt$save_progress_name, ".RDS"))
-    bam.test.obj@clone.composition$v3 = bam.v3.obj@clone.composition$v3
-    v3 = bam.test.obj@clone.composition$v3$cell.barcode
-    v3_clones = bam.test.obj@clone.composition$v3$clone.id
+    v3.obj = readRDS(paste0(opt$out, "v3", opt$save_progress_name, ".RDS"))
+    obj@clone.composition$v3 = v3.obj@clone.composition$v3
+    v3 = obj@clone.composition$v3$cell.barcode
+    v3_clones = obj@clone.composition$v3$clone.id
+    v3_c = rownames(v3.obj@jaccard.mtx)
 }
 
 # If the object already exists, and a reduction therefore has been calculated,  load the object.
@@ -242,24 +91,80 @@ if (file.exists(paste0(opt$out, opt$save_progress_name, "_reduction.RDS"))) {
 if (opt$filter) {
     # Read RNA-seq data and create seurat object
     ct = Read10X(data.dir = paste0("data/samples/", opt$sample_name, "/outs/filtered_feature_bc_matrix/"))
-    ct = CreateSeuratObject(counts = ct, project = "test", min.cells = opt$min_cells, min.features = opt$min_features)
+    ct = CreateSeuratObject(counts = ct, project = "PVNct", min.cells = opt$min_cells, min.features = opt$min_features)
+    
+    # Find mitochrondrial genes
+    ct[["percent.mt"]] = PercentageFeatureSet(ct, pattern = "^MT-")
+    
+    # QC plots
+    pdf(paste0(opt$out, opt$save_progress_name, "_QC.pdf"))
+    g = VlnPlot(ct, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+    print(g)
+    dev.off()
+    pdf(paste0(opt$out, opt$save_progress_name, "_QC_FeatureScatter.pdf"))
+    plot1 = FeatureScatter(ct, feature1 = "nCount_RNA", feature2 = "percent.mt")
+    plot2 = FeatureScatter(ct, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+    g = plot1 + plot2
+    print(g)
+    dev.off()
+    
     
     # Normalize data
-    ct = NormalizeData(ct, normalization.method = "LogNormalize", scale.factor = opt$scale_factor)
+    ct = NormalizeData(ct, normalization.method="LogNormalize", scale.factor=opt$scale_factor)
     
     # Find varible features
-    ct = FindVariableFeatures(ct, selection.method = "vst", nfeatures = opt$n_var_features)
-
+    ct = FindVariableFeatures(ct, nfeatures=opt$n_var_features)
+    
+    # Plot itttt
+    top10 = head(VariableFeatures(ct), 10)
+    # plot variable features with and without labels
+    pdf(paste0(opt$out, opt$save_progress_name, "_variableFeatures.pdf"))
+    plot1 = VariableFeaturePlot(ct)
+    plot2 = LabelPoints(plot = plot1, points = top10, repel = TRUE)
+    g = plot1 + plot2
+    print(g)
+    dev.off()
+    
+    # Score genes for cell cycleing
+    s.genes = cc.genes$s.genes
+    g2m.genes = cc.genes$g2m.genes
+    ct = CellCycleScoring(ct, s.features=s.genes, g2m.features=g2m.genes)
+    
+    # Recommended as only regressing genes can negatively impact downstream analysis, particularly in differentiating processes 
+    ct$CC.Difference = ct$S.Score - ct$G2M.Score
+    
     # Scale data
-    all.genes = rownames(ct)
-    ct = ScaleData(ct, features = all.genes)
+    ct = ScaleData(ct, features=rownames(ct), vars.to.regress=c("CC.Difference", "percent.mt"))
 
-    # Run PCA
-    ct = RunPCA(ct)
+    # Run PCA on varible features
+    ct = RunPCA(ct, features=VariableFeatures(object=ct), npcs=opt$npcs)
+    
+    # Some Plots
+    pdf(paste0(opt$out, opt$save_progress_name, "_pca_dimheatmap.pdf"))
+    g = DimHeatmap(ct, dims = 1:15, cells = 500, balanced = TRUE)
+    print(g)
+    dev.off
+    
+    # Test significance of PCs
+    if (opt$jackstraw) {
+        ct <- JackStraw(ct, num.replicate = 100)
+        ct <- ScoreJackStraw(ct, dims = 1:90)
+        pdf(paste0(opt$out, opt$save_progress_name, "_jackstraw.pdf"))
+        g = JackStrawPlot(ct, dims = 1:90)
+        print(g)
+        dev.off()
+    } else {
+        pdf(paste0(opt$out, opt$save_progress_name, "_elbow.pdf"))
+        g = ElbowPlot(ct)
+        print(g)
+        dev.off()
+    }
 
     # Find neighbors and clusters in data
     ct = FindNeighbors(ct, dims = 1:opt$neighbours_dims)
     ct = FindClusters(ct, resolution = opt$cluster_resolution)
+    
+    saveRDS(ct, file = paste0(opt$out, opt$save_progress_name, "_reduction.RDS"))
 }
 
 #  Run UMAP and save seurat object
@@ -276,241 +181,9 @@ if (opt$runUMAP) {
 
 
 # Visualize UMAP
-if (opt$visualize_umap) {
-    # If library version is v1 or all libraries, visualize clones of v1 in UMAP
-    if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-    pdf(paste0(opt$out, opt$save_progress_name, "_umap_v1.pdf"))
-    g = DimPlot(ct, reduction = "umap", cells.highlight=v1, cols.highlight= "red", cols = "gray")
-    print(g)
-    dev.off()
-    }
-    # If library version is v2 or all libraries, visualize clones of v2 in UMAP
-    if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-    pdf(paste0(opt$out, opt$save_progress_name, "_umap_v2.pdf"))
-    g = DimPlot(ct, reduction = "umap", cells.highlight=v2, cols.highlight= "blue", cols = "gray")
-    print(g)
-    dev.off()
-    }
-    # If library version is v3 or all libraries, visualize clones of v3 in UMAP
-    if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-    pdf(paste0(opt$out, opt$save_progress_name, "_umap_v3.pdf"))
-    g = DimPlot(ct, reduction = "umap", cells.highlight=v2, cols.highlight= "green", cols = "gray")
-    print(g)
-    dev.off()
-    }
-    
-    # If library version is v1 or all libraries, visualize specific clone of v1 in UMAP
-    if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-    plot_umap_with_specific_clone(ct, "v1", "umap", v1, v1_clones)
-    }
-    # If library version is v2 or all libraries, visualize specific clone of v2 in UMAP
-    if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-    plot_umap_with_specific_clone(ct, "v2", "umap", v2, v2_clones)
-    }
-    # If library version is v3 or all libraries, visualize specific clone of v3 in UMAP
-    if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-    plot_umap_with_specific_clone(ct, "v3", "umap", v3, v3_clones)
-    }
-    
-    # If library version is v1 or all libraries, colour all clones of v1 in UMAP
-    if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-    plot_umap_clones(ct, "v1", "umap", v1, v1_clones)
-    }
-    # If library version is v12or all libraries, colour all clones of v2 in UMAP
-    if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-    plot_umap_clones(ct, "v2", "umap", v2, v2_clones)
-    }
-    # If library version is v3 or all libraries, colour all clones of v3 in UMAP
-    if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-    plot_umap_clones(ct, "v3", "umap", v3, v3_clones)
-    }
-
-    # If we have data of all libraries, visualize clones of the libraries in UMAP
-    if (opt$visualize_ver=="all") {
-        # Get UMAP embedings of entire data and set subset column to Without CellTag
-        umap_df = as.data.frame(ct@reductions$umap@cell.embeddings)
-        umap_df$subset <- "Without cellTag"
-
-        # Define subsets and corresponding colors
-        subsets = list(v1, v2, v3)
-        colors = c("red", "blue", "green")
-
-        # Assign colors to subsets in the data frame
-        umap_df$alpha = NA
-        for (i in seq_along(subsets)) {
-            umap_df$subset[rownames(umap_df) %in% subsets[[i]]] <- paste0("v", i)
-            umap_df$alpha[rownames(umap_df) %in% subsets[[i]]] <- paste0("v", i)
-        }
-
-        # Plot the UMAP values with colored subsets
-        plot = ggplot(umap_df, aes(UMAP_1, UMAP_2, color = subset)) +
-          geom_point(alpha = ifelse(!is.na(umap_df$alpha), 1, 0.1)) +
-          scale_color_manual(values = c(colors, "black")) +
-          labs(color = "CellTags")
-
-        # Save the plot as an image file
-        ggsave(paste0(opt$out, opt$save_progress_name, "_umap.pdf"), plot, width = 6, height = 6, dpi = 1)
-    }
-    
-    #Plot specific gene abundance
-    if (file.exists(opt$gene_list)) {
-        # Read the file and store the gene data into a data frame
-        gene_data = read.table(opt$gene_list, header = FALSE, sep = "\t")
-
-        # Combine the gene columns into a vector
-        genes = unlist(gene_data)
-
-        # Iterate over the genes in a for loop
-        for (gene in genes) {
-            # Catch error if gene is not found in data and print it, do not exit
-            tryCatch ({
-                # Create gene Feature plot of entire dataset
-                pdf(paste0(opt$out, opt$save_progress_name, "_", gene, "_umap.pdf"))
-                g = FeaturePlot(ct, features = c(gene), reduction = "umap")
-                print(g)
-                dev.off()
-
-                # If library version is v1 or all libraries, create gene feature plot of cells with celltag
-                if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-                plot_gene_plus_cellTag(ct, "v1", "umap", v1, gene)
-                }
-                # If library version is v1 or all libraries, create gene feature plot of cells with celltag
-                if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-                plot_gene_plus_cellTag(ct, "v2", "umap", v2, gene)
-                }
-                # If library version is v1 or all libraries, create gene feature plot of cells with celltag
-                if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-                plot_gene_plus_cellTag(ct, "v3", "umap", v3, gene)
-                }
-            
-            },
-            error = function(err) {
-                # Print the error message
-                print(paste("Error:", conditionMessage(err)))
-            })
-
-        }
-
-    }
-
-}
-
-# Visualize UMAP
-if (opt$visualize_tsne) {
-    # If library version is v1 or all libraries, visualize clones of v1 in TSNE
-    if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-    pdf(paste0(opt$out, opt$save_progress_name, "_umap_v1.pdf"))
-    g = DimPlot(ct, reduction = "tsne", cells.highlight=v1, cols.highlight= "red", cols = "gray")
-    print(g)
-    dev.off()
-    }
-    # If library version is v2 or all libraries, visualize clones of v2 in TSNE
-    if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-    pdf(paste0(opt$out, opt$save_progress_name, "_umap_v2.pdf"))
-    g = DimPlot(ct, reduction = "tsne", cells.highlight=v2, cols.highlight= "blue", cols = "gray")
-    print(g)
-    dev.off()
-    }
-    # If library version is v2 or all libraries, visualize clones of v2 in TSNE
-    if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-    pdf(paste0(opt$out, opt$save_progress_name, "_umap_v3.pdf"))
-    g = DimPlot(ct, reduction = "tsne", cells.highlight=v2, cols.highlight= "green", cols = "gray")
-    print(g)
-    dev.off()
-    }
-    
-    # If library version is v1 or all libraries, visualize specific clone of v1 in TSNE
-    if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-    plot_umap_with_specific_clone(ct, "v1", "tsne", v1, v1_clones)
-    }
-    # If library version is v2 or all libraries, visualize specific clone of v2 in TSNE
-    if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-    plot_umap_with_specific_clone(ct, "v2", "tsne", v2, v2_clones)
-    }
-    # If library version is v3 or all libraries, visualize specific clone of v3 in TSNE
-    if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-    plot_umap_with_specific_clone(ct, "v3", "tsne", v3, v3_clones)
-    }
-    
-    # If library version is v1 or all libraries, colour all clones of v1 in TSNE
-    if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-    plot_umap_clones(ct, "v1", "tsne", v1, v1_clones)
-    }
-    # If library version is v2 or all libraries, colour all clones of v2 in TSNE
-    if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-    plot_umap_clones(ct, "v2", "tsne", v2, v2_clones)
-    }
-    # If library version is v3 or all libraries, colour all clones of v3 in TSNE
-    if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-    plot_umap_clones(ct, "v3", "tsne", v3, v3_clones)
-    }
-
-    # If we have data of all libraries, visualize clones of the libraries in TSNE
-    if (opt$visualize_ver=="all") {
-        # Get TSNE embedings of entire data and set subset column to Without CellTag
-        umap_df = as.data.frame(ct@reductions$tsne@cell.embeddings)
-        umap_df$subset = "Without cellTag"
-
-        # Define subsets and corresponding colors
-        subsets = list(v1, v2, v3)
-        colors = c("red", "blue", "green")
-
-        # Assign colors to subsets in the data frame
-        umap_df$alpha = NA
-        for (i in seq_along(subsets)) {
-            umap_df$subset[rownames(umap_df) %in% subsets[[i]]] <- paste0("v", i)
-            umap_df$alpha[rownames(umap_df) %in% subsets[[i]]] <- paste0("v", i)
-        }
-
-        # Plot the TSNE values with colored subsets
-        plot = ggplot(umap_df, aes(TSNE_1, TSNE_2, color = subset)) +
-          geom_point(alpha = ifelse(!is.na(umap_df$alpha), 1, 0.1)) +
-          scale_color_manual(values = c(colors, "black")) +
-          labs(color = "CellTags")
-
-        # Save the plot as an image file
-        ggsave(paste0(opt$out, opt$save_progress_name, "_tsne.pdf"), plot, width = 6, height = 6, dpi = 1)
-    }
-    
-    #Plot specific gene abundance
-    if (file.exists(opt$gene_list)) {
-        # Read the file and store the gene data into a data frame
-        gene_data = read.table(opt$gene_list, header = FALSE, sep = "\t")
-
-        # Combine the gene columns into a vector
-        genes = unlist(gene_data)
-
-        # Iterate over the genes in a for loop
-        for (gene_sp in genes) {
-            # Catch error if gene is not found in data and print it, do not exit
-            tryCatch ({
-                # Create gene Feature plot of entire dataset
-                pdf(paste0(opt$out, opt$save_progress_name, "_", gene_sp, "_tsne.pdf"))
-                g = FeaturePlot(ct, features = c(gene_sp), reduction = "tsne")
-                print(g)
-                dev.off()
-
-                # If library version is v1 or all libraries, create gene feature plot of cells with celltag
-                if (opt$visualize_ver=="v1" || opt$visualize_ver=="all") {
-                plot_gene_plus_cellTag(ct, "v1", "tsne", v1, gene_sp)
-                }
-                # If library version is v2 or all libraries, create gene feature plot of cells with celltag
-                if (opt$visualize_ver=="v2" || opt$visualize_ver=="all") {
-                plot_gene_plus_cellTag(ct, "v2", "tsne", v2, gene_sp)
-                }
-                # If library version is v3 or all libraries, create gene feature plot of cells with celltag
-                if (opt$visualize_ver=="v3" || opt$visualize_ver=="all") {
-                plot_gene_plus_cellTag(ct, "v3", "tsne", v3, gene_sp)
-                }
-            
-            },
-            error = function(err) {
-                # Print the error message
-                print(paste("Error:", conditionMessage(err)))
-            })
-        }
-
-    }
+if (opt$visualize_umap | opt$visualize_tsne) {
+    plotMap(opt, ct, v1=v1, v2=v2, v3=v3, v1_clones=v1_clones, v2_clones=v2_clones, 
+            v3_clones=v3_clones, v1_c=v1_c, v2_c=v2_c, v3_c=v3_c)
 }
 
     

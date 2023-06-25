@@ -1,0 +1,242 @@
+---
+title: "Analysing CellTags"
+author: "Markus Heidrich"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(echo = TRUE, fig.width = 12, fig.height = 12)
+```
+
+
+
+```{r load-libraries}
+library(knitr)
+library(ggplot2)
+suppressMessages(library("CellTagR"))
+suppressMessages(library("Seurat"))
+suppressMessages(library("optparse"))
+```
+
+```{r stuff}
+obj = readRDS("data/out/cellTag/ct.RDS")
+ct = readRDS("data/out/cellTag/ct_reduction.RDS")
+
+Idents(ct) = "Not Quality CellTags"
+
+cluster9_bc = obj@clone.composition$v1$cell.barcode[obj@clone.composition$v1$clone.id == 9]
+cluster13_bc = obj@clone.composition$v1$cell.barcode[obj@clone.composition$v1$clone.id == 13]
+filtered_bc = rownames(obj@jaccard.mtx)
+clones = obj@clone.composition$v1$cell.barcode
+
+c9 = subset(ct, cells=cluster9_bc)
+c9[["percent.mt"]] = PercentageFeatureSet(c9, pattern = "^MT-")
+c9 = NormalizeData(c9, normalization.method="LogNormalize", scale.factor=10000)
+c9 = FindVariableFeatures(c9, nfeatures=2000)
+s.genes = cc.genes$s.genes
+g2m.genes = cc.genes$g2m.genes
+c9 = CellCycleScoring(c9, s.features=s.genes, g2m.features=g2m.genes)
+ct$CC.Difference = ct$S.Score - ct$G2M.Score
+c9 = ScaleData(c9, features=rownames(c9), vars.to.regress=c("CC.Difference", "percent.mt"))
+c9 = RunPCA(c9, features=VariableFeatures(object=c9), npcs=26)
+c9 = FindNeighbors(c9)
+c9 = FindClusters(c9, resolution = 1.03)
+
+x = subset(c9, idents=0)
+qc.metrics=as_tibble(
+    x[[]],
+    rownames="Cell.Barcode")
+avg = AverageExpression(x, use.scale=TRUE)
+average_expression_df <- as.data.frame(avg, stringsAsFactors = FALSE)
+average_expression_df$gene <- rownames(average_expression_df)
+sorted_df <- average_expression_df[order(average_expression_df$all, decreasing = TRUE), ]
+rownames(sorted_df) <- sorted_df$gene
+sorted_df$gene <- NULL
+head(sorted_df, 40)
+
+x = subset(c9, idents=1)
+qc.metrics=as_tibble(
+    x[[]],
+    rownames="Cell.Barcode")
+avg = AverageExpression(x, use.scale=TRUE)
+average_expression_df <- as.data.frame(avg, stringsAsFactors = FALSE)
+average_expression_df$gene <- rownames(average_expression_df)
+sorted_df <- average_expression_df[order(average_expression_df$all, decreasing = TRUE), ]
+rownames(sorted_df) <- sorted_df$gene
+sorted_df$gene <- NULL
+head(sorted_df, 40)
+
+x = subset(ct, cells=filtered_bc)
+qc.metrics=as_tibble(
+    x[[]],
+    rownames="Cell.Barcode")
+avg = AverageExpression(x, use.scale=TRUE)
+average_expression_df <- as.data.frame(avg, stringsAsFactors = FALSE)
+average_expression_df$gene <- rownames(average_expression_df)
+sorted_df <- average_expression_df[order(average_expression_df$all, decreasing = TRUE), ]
+rownames(sorted_df) <- sorted_df$gene
+sorted_df$gene <- NULL
+head(sorted_df, 40)
+
+x = subset(ct, cells=clones)
+qc.metrics=as_tibble(
+    x[[]],
+    rownames="Cell.Barcode")
+avg = AverageExpression(x, use.scale=TRUE)
+average_expression_df <- as.data.frame(avg, stringsAsFactors = FALSE)
+average_expression_df$gene <- rownames(average_expression_df)
+sorted_df <- average_expression_df[order(average_expression_df$all, decreasing = TRUE), ]
+rownames(sorted_df) <- sorted_df$gene
+sorted_df$gene <- NULL
+head(sorted_df, 40)
+
+x = subset(ct, cells=cluster9_bc)
+qc.metrics=as_tibble(
+    x[[]],
+    rownames="Cell.Barcode")
+avg = AverageExpression(x, use.scale=TRUE)
+average_expression_df <- as.data.frame(avg, stringsAsFactors = FALSE)
+average_expression_df$gene <- rownames(average_expression_df)
+sorted_df <- average_expression_df[order(average_expression_df$all, decreasing = TRUE), ]
+rownames(sorted_df) <- sorted_df$gene
+sorted_df$gene <- NULL
+head(sorted_df, 20)
+
+x = subset(ct, cells=cluster13_bc)
+qc.metrics=as_tibble(
+    x[[]],
+    rownames="Cell.Barcode")
+avg = AverageExpression(x, use.scale=TRUE)
+average_expression_df <- as.data.frame(avg, stringsAsFactors = FALSE)
+average_expression_df$gene <- rownames(average_expression_df)
+sorted_df <- average_expression_df[order(average_expression_df$all, decreasing = TRUE), ]
+rownames(sorted_df) <- sorted_df$gene
+sorted_df$gene <- NULL
+head(sorted_df, 20)
+
+ct = SetIdent(object = ct, cells = filtered_bc, value = "Quality CellTags")
+
+x = subset(ct, idents="Not Quality CellTags")
+qc.metrics=as_tibble(
+    x[[]],
+    rownames="Cell.Barcode")
+avg = AverageExpression(x, use.scale=TRUE)
+average_expression_df <- as.data.frame(avg, stringsAsFactors = FALSE)
+average_expression_df$gene <- rownames(average_expression_df)
+sorted_df <- average_expression_df[order(average_expression_df$all, decreasing = TRUE), ]
+rownames(sorted_df) <- sorted_df$gene
+sorted_df$gene <- NULL
+head(sorted_df, 40)
+
+markers = FindAllMarkers(ct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+ct = SetIdent(object = ct, cells = clones, value = "Clones")
+
+markers = FindAllMarkers(ct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+markers <- FindMarkers(ct, ident.1 = "Clones", ident.2 = "Quality CellTags", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+markers <- FindMarkers(ct, ident.1 = "Clones", ident.2 = "Not Quality CellTags", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+ct = SetIdent(object = ct, cells = cluster9_bc, value = "Clone 9")
+ct = SetIdent(object = ct, cells = cluster13_bc, value = "Clone 13")
+
+markers = FindAllMarkers(ct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+print(markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 10, order_by = avg_log2FC), n = Inf)
+
+markers <- FindMarkers(ct, ident.1 = "Clone 9", ident.2 = "Clones", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+markers <- FindMarkers(ct, ident.1 = "Clone 13", ident.2 = "Clones", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+markers <- FindMarkers(ct, ident.1 = "Clone 9", ident.2 = "Quality CellTags", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+#markers <- FindMarkers(ct, ident.1 = "Clone 13", ident.2 = "Quality Celltags", min.pct = 0.25, logfc.threshold = 0.25)
+#head(markers, 10)
+#markers %>%
+#    slice_max(n = 10, order_by = avg_log2FC)
+
+markers <- FindMarkers(ct, ident.1 = "Clone 9", ident.2 = "Not Quality CellTags", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+#markers <- FindMarkers(ct, ident.1 = "Clone 13", ident.2 = "Not Quality Celltags", min.pct = 0.25, logfc.threshold = 0.25)
+#head(markers, 10)
+#markers %>%
+#    slice_max(n = 10, order_by = avg_log2FC)
+
+Idents(ct) = "Not Clones"
+ct = SetIdent(object = ct, cells = clones, value = "Clones")
+
+markers = FindAllMarkers(ct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+print(markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 10, order_by = avg_log2FC), n = Inf)
+
+
+Idents(ct) = "Not Quality CellTags"
+ct = SetIdent(object = ct, cells = filtered_bc, value = "Quality CellTags")
+
+markers = FindAllMarkers(ct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+print(markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 10, order_by = avg_log2FC), n = Inf)
+
+
+Idents(ct) = "Not Quality CellTags"
+ct = SetIdent(object = ct, cells = cluster9_bc, value = "Clone 9")
+ct = SetIdent(object = ct, cells = cluster13_bc, value = "Clone 13")
+
+markers = FindAllMarkers(ct, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+print(markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 10, order_by = avg_log2FC), n = Inf)
+
+
+markers <- FindMarkers(ct, ident.1 = "Clone 9", ident.2 = "Clone 13", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+markers <- FindMarkers(ct, ident.1 = "Clone 13", ident.2 = "Clone 9", min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+markers %>%
+    slice_max(n = 10, order_by = avg_log2FC)
+
+markers = FindAllMarkers(c9, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+head(markers, 10)
+print(markers %>%
+    group_by(cluster) %>%
+    slice_max(n = 10, order_by = avg_log2FC), n = Inf)
+
+```
