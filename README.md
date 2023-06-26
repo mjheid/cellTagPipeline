@@ -37,6 +37,7 @@ control.sh
 data  
    |-- CellTag.UTR  
    |-- GFP.CDS  
+   |-- gene_list.txt
    |-- bam  
    |   |-- .gitinclude  
    |-- fastq  
@@ -67,17 +68,27 @@ scripts
    |-- preprocessing.sh  
 ```
 
-The folder '/scripts' contains all scripts that are used by the pipeline and are called over 
-control.sh. 'scripts/helperFunctions.R' contains functions for plotting and printing of information 
-used by other scripts. '/data' contains data needed and produced by the pipeline. CellTag.UTR is a fasta 
-file of the CellTag.UTR transposon, GFP.CDS is a fasta file of the GFP.CDS transposon. 'data/bam/' 
-contains '.bam' files needed to create CellTag UMI count matrixes. 'data/fastq/' contains fastq
-files , whcih contains the raw sequenced data. 'data/out/' contains output files produced during the 
-execution of the pipeline. 'data/refgenome/' contains the reference genome output created from 
-cellranger mkref. "data/samples/" contains the output from cellranger count. It is assumed that 
-gene count data is found here, as if cellranger count had this dir as an output. 'data/sourceFile/' 
-contains '.fa' and '.gtf' files used to build the reference genome. They should enclude CellTag.UTR 
-and GFP.CDS. 'data/whitelist/' contains the three whitelists of the three CellTag librarys.
+The folder `/scripts` contains all scripts that are used by the pipeline and are called over 
+`control.sh`. `scripts/helperFunctions.R` contains functions for plotting and printing of information 
+used by other scripts. `data/` contains data needed and produced by the pipeline. `data/CellTag.UTR` is a fasta 
+file of the CellTag.UTR transposon, `data/GFP.CDS` is a fasta file of the GFP.CDS transposon. `data/gene_list.txt`
+is a file containing row seperated gene names. These are used when visualising gene expression. `data/bam/`
+ contains `.bam` files needed to create CellTag UMI count matrixes. `data/fastq/` contains fastq
+files , which contains the raw sequenced data. `data/outt` contains output files produced during the 
+execution of the pipeline. `data/refgenome/` contains the reference genome output created from 
+cellranger mkref. `data/samples/` contains the output from cellranger count. It is assumed that 
+gene count data is found here, as if cellranger count had this dir as an output. `data/sourceFile/`
+contains `.fa` and `.gtf` files used to build the reference genome. They should enclude CellTag.UTR 
+and GFP.CDS. `data/whitelist/` contains the three whitelists of the three CellTag librarys. 
+`scripts/preprocessing.sh` contains the preprocessing part of the pipeline. `scripts/cellTag.sh` 
+contains the CellTag UMI count matrix generation and filtering, as well as clone calling. This gets 
+executed by firstly calling `scripts/cell.R`, loading `.bam`data and preparing CellTags for collapsing, 
+followed by `scripts/filtering_cloneCalling.R` in which CellTags are filtered and clones called. 
+`scripts/network.R` creates a clone network for data in which all libraries have been clone called. 
+`scripts/map_cellTags.R` runs the seurat [workflow](https://satijalab.org/seurat/articles/pbmc3k_tutorial.html) 
+while [regressing out cell cycle genes](https://satijalab.org/seurat/articles/cell_cycle_vignette.html) as 
+well as [mitochrondial genes](https://github.com/satijalab/seurat/issues/6613). Afterwards several visualisation 
+options exist to visualize distribution of CellTags, clones and genes.
 
 ## control of CellTag Pipeline
 
