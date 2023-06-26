@@ -11,24 +11,24 @@ data to analyse.
 
 It is recommended to create a conda envrionment to install all needed packages. Do 
 as follows:
-'''sh
+```sh
 conda create -n celltag  
 conda activate celltag  
 conda install -c bioconda r-seurat r-optparse r-devtools starcode r-ggplot2  
-'''
+```
 It might take some time for conda to find compatible verions to install everything. 
 To complete the installation open the R command line of the celltag environment and 
 do the following:
-'''R
+```R
 library("devtools")  
 devtools::install_github("morris-lab/CellTagR")  
-'''
+```
 Again, this might take quite some time to install.
 
 
 ## Structure
 
-'''
+```
 .gitignore  
 README.md  
 analysis.Rmd  
@@ -65,7 +65,7 @@ scripts
    |-- map_cellTags.R  
    |-- network.R  
    |-- preprocessing.sh  
-'''
+```
 
 The folder '/scripts' contains all scripts that are used by the pipeline and are called over 
 control.sh. 'scripts/helperFunctions.R' contains functions for plotting and printing of information 
@@ -83,29 +83,28 @@ and GFP.CDS. 'data/whitelist/' contains the three whitelists of the three CellTa
 
 The control center of the Pipeline. Executed as follows:
 
-'''sh
+```sh
 ./control.sh [command] [arguments]
-'''
+```
 
-Type './control.sh --help' for the following help message on how to use the control script:
+Type `./control.sh --help` for the following help message on how to use the control script:
 
-'''
-Usage: ./control.sh [command] [arguments]
-Options:
-  preprocess [arguments]    Run the preprocessing script with the provided arguments.
-                            Build a reference genome, count stuff, filter stuff with samtools.
-  cellTag [arguments]    Run the cellTagR pipeline with the provided arguments
-  network [arguments]    Visualize clone lineages through networks and more.
-  map [arguments]    Visualize cellTags in dimension reduction plots, TSNE and UMAP supported.
-  --help    Print this help. For more specific help on commands type [command] --help
-'''
+```sh
+Usage: ./control.sh [command] [arguments]  
+Options:  
+  preprocess [arguments]    Run the preprocessing script with the provided arguments.  
+                            Build a reference genome, count stuff, filter stuff with samtools.  
+  cellTag [arguments]    Run the cellTagR pipeline with the provided arguments  
+  network [arguments]    Visualize clone lineages through networks and more.  
+  map [arguments]    Visualize cellTags in dimension reduction plots, TSNE and UMAP supported.  
+  --help    Print this help. For more specific help on commands type [command] --help  
+```
 
 ## Preprocessing
 
-Executed via './control.sh preprocess [arguments]'. List of arguments can be seen via 
-'./control.sh preprocess --help':
+Executed via `./control.sh preprocess [arguments`. List of arguments can be seen via `./control.sh preprocess --help`:
 
-'''
+```sh
 Usage: scripts/preprocessing.sh [arguments]
 Arguments:
   --mkref    Run cellranger mkref. Default: false
@@ -130,22 +129,21 @@ Arguments:
   --bam_data [Path]   Path from current dir to output dir of filtered .bam 
                       files when using --filter_sam. Default: data/bam
   --help    Print this help
-'''
+```
 
 Output when using '--mkref' will be in 'data/refgenomes/[--refgenome]/'.
 Output when using '--count' will be in 'data/samples/[--sample_name]/'.
 Example execution:
 
-'''sh
+```sh
 ./control.sh preprocess --mkref --count --filter_sam --fastqs "data/fastq/"
-'''
+```
 
 ## CellTag Pipline
 
-Executed via './control.sh cellTag [arguments]'. List of arguments can be seen via 
-'./control.sh cellTag --help':
+Executed via `./control.sh cellTag [arguments]`. List of arguments can be seen via `./control.sh cellTag --help`:
 
-'''sh
+```sh
 Usage: scripts/cellTag.sh [arguments]  
 Arguments:  
   --visualize    Visualize filtering steps. Default: false  
@@ -169,29 +167,28 @@ Arguments:
   --jac_cut [float]   When calculating simiarity of cells voa Jaccard coefficiants,  
                       this is the cut-off used to consider cells for clone calling. Default: 0.7  
   --help    Print this help  
-'''
+```
 
-This command executes two other R script, 'script/cell.R' and 'scripts/filtering_cloneCalling.R'.
+This command executes two other R script, `script/cell.R` and `scripts/filtering_cloneCalling.R`.
 Between their execution starcode gets executed. If users want to add arguments, they should 
-add arguments in 'scripts/cellTag.sh', the script in which that argument is used, as well as in 
+add arguments in `scripts/cellTag.sh`, the script in which that argument is used, as well as in 
 the call of the script inside of 'scripts/cellTag.sh'. Also, make sure that all paths specified exist.  
 Several outputfiles will be produced: a [whitelist_version][save_progress_name].RDS, containing 
 current working matrixes, [save_progress_name].RDS which will accumalte data of different 
 library versions as long as [save_progress_name] is the same during runs. Each run will produce 
 multiple plots as well.
 A possible way to execute this part of the script for all libaries could be as follows:  
-'''sh
+```sh
 ./control.sh cellTag --visualize --save_progress_name "ct" --tagged 1 --low_filter 1 --bam_data "data/bam/possorted_genome_bam.filtered_merged.bam"  --whitelist_version "v1" --sample_name "SI-TT-H4" --out "data/out/cellTag/"  
 #./control.sh cellTag --visualize --save_progress_name "ct" --tagged 1 --low_filter 1 --bam_data "data/bam/possorted_genome_bam.filtered_merged.bam"  --whitelist_version "v2" --sample_name "SI-TT-H4" --out "data/out/cellTag/"  
 #./control.sh cellTag --visualize --save_progress_name "ct" --tagged 1 --low_filter 1 --bam_data "data/bam/possorted_genome_bam.filtered_merged.bam"  --whitelist_version "v3" --sample_name "SI-TT-H4" --out "data/out/cellTag/"  
-'''
+```
 
 ## Network Construction
 
-Executed via './control.sh network [arguments]'. List of arguments can be seen via 
-'./control.sh network --help':  
+Executed via `./control.sh network [arguments]`. List of arguments can be seen via `./control.sh network --help`:  
 
-'''sh
+```sh
 Usage: scripts/network.R [options]  
 Options:  
     --visualize  
@@ -204,20 +201,19 @@ Options:
         Name appended to outputs to be saved. Default: test  
     -h, --help  
         Show this help message and exit  
-'''
-'--start_node' if not specified finds the node with the highest amount of connections and uses 
-that one to start building the network. If wanted you can take a look at nodes in the saved 
-'.RDS' file as follows: 'object@nodes' and 'object@network.link.list'.  
-This produces an '.html' file in which a clone network is visualized, as well as a plot which 
+```
+`--start_node` if not specified finds the node with the highest amount of connections and uses 
+that one to start building the network. If wanted you can take a look at nodes in the saved `.RDS` file as follows: `object@nodes` and `object@network.link.list`.  
+This produces an `.html` file in which a clone network is visualized, as well as a plot which 
 show how many cells contain CellTags from each library.  
 A possible way to execute this would be as follows:  
-'''sh
+```sh
 ./control.sh network --visualize --save_progress_name "ct"
-'''
+```
 
 ## Mapping 
 
-'''sh
+```sh
 Usage: scripts/map_cellTags.R [options]  
 Options:  
     --visualize_umap  
@@ -261,11 +257,11 @@ Options:
         Name of experiment sample. Default: SI-TT-H4  
     -h, --help  
         Show this help message and exit  
-'''
+```
 
 It is recommended to first filter, utalising the seurat workflow. Several quality control plots 
-will be plotted, it is advised to take them into considertion and rerun with '--filter' if deemed 
-necessary. Whenever TSNE or UMAP gets calculated, the seurat object '[save_progress_name]_reduction.RDS' 
+will be plotted, it is advised to take them into considertion and rerun with `--filter` if deemed 
+necessary. Whenever TSNE or UMAP gets calculated, the seurat object `[save_progress_name]_reduction.RDS` 
 
 gets saved. Whenever filter gets used  this object is saved as well. When choosing to visualize several plots 
 get plotted: Location of CellTags, identified clones and specified clone on the 2D embedding. If gene list 
@@ -275,8 +271,8 @@ all librarys get plotted.
 
 A possible execution might look as follows:
 
-'''sh
+```sh
 ./control.sh map --save_progress_name "ct" --sample_name "SI-TT-H4" --min_cells 3 --min_features 200 --filter --out "data/out/cellTag/"  
 ./control.sh map --visualize_umap --runUMAP --visualize_ver "v1" --save_progress_name "ct" --gene_list "data/gene_list.txt" --out "data/out/cellTag/" --vis_clone 9  
 ./control.sh map --visualize_umap --visualize_ver "v1" --save_progress_name "ct" --gene_list "data/gene_list.txt" --out "data/out/cellTag/" --vis_clone 13  
-'''
+```
