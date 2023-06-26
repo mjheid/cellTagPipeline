@@ -100,7 +100,7 @@ The control center of the Pipeline. Executed as follows:
 
 Type `./control.sh --help` for the following help message on how to use the control script:
 
-```sh
+```
 Usage: ./control.sh [command] [arguments]  
 Options:  
   preprocess [arguments]    Run the preprocessing script with the provided arguments.  
@@ -115,7 +115,7 @@ Options:
 
 Executed via `./control.sh preprocess [arguments`. List of arguments can be seen via `./control.sh preprocess --help`:
 
-```sh
+```
 Usage: scripts/preprocessing.sh [arguments]
 Arguments:
   --mkref    Run cellranger mkref. Default: false
@@ -154,7 +154,7 @@ Example execution:
 
 Executed via `./control.sh cellTag [arguments]`. List of arguments can be seen via `./control.sh cellTag --help`:
 
-```sh
+```
 Usage: scripts/cellTag.sh [arguments]  
 Arguments:  
   --visualize    Visualize filtering steps. Default: false  
@@ -199,7 +199,7 @@ A possible way to execute this part of the script for all libaries could be as f
 
 Executed via `./control.sh network [arguments]`. List of arguments can be seen via `./control.sh network --help`:  
 
-```sh
+```
 Usage: scripts/network.R [options]  
 Options:  
     --visualize  
@@ -224,7 +224,7 @@ A possible way to execute this would be as follows:
 
 ## Mapping 
 
-```sh
+```
 Usage: scripts/map_cellTags.R [options]  
 Options:  
     --visualize_umap  
