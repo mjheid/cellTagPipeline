@@ -13,7 +13,7 @@ option_list = list(
               help="output file dir", metavar="character"),
     make_option(c("--start_node"), type="character", default="BiggestNode", 
               help="Start node to build Graph from.", metavar="character"),
-    make_option(c("--save_progress_name"), type="character", default="insert", 
+    make_option(c("--save_progress_name"), type="character", default="test", 
               help="Name appended to outputs to be saved", metavar="character")
 )
 

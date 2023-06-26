@@ -40,7 +40,7 @@ option_list = list(
               help="Number of PCAs for FindNeighbours to look at.", metavar="int"),
     make_option(c("--cluster_resolution"),  default=0.5, 
               help="Resolution of clusters to calculate. Between 0 and 1.", metavar="float"),
-    make_option(c("--save_progress_name"), type="character", default="insert", 
+    make_option(c("--save_progress_name"), type="character", default="test", 
               help="Name appended to outputs to be saved", metavar="character"),
     make_option(c("--sample_name"), type="character", default="SI-TT-H4", 
                 help="Name of experiment sample", metavar="character")
