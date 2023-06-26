@@ -81,7 +81,7 @@ gene count data is found here, as if cellranger count had this dir as an output.
 contains `.fa` and `.gtf` files used to build the reference genome. They should enclude CellTag.UTR 
 and GFP.CDS. `data/whitelist/` contains the three whitelists of the three CellTag librarys. 
 `scripts/preprocessing.sh` contains the preprocessing part of the pipeline, expects user to have 
-samtools/1.16.1 and cellranger/5.0.1 loadable as folows: module load . `scripts/cellTag.sh` 
+`samtools/1.16.1` and `cellranger/5.0.1 `loadable as folows: `module load [tool]`. `scripts/cellTag.sh` 
 contains the CellTag UMI count matrix generation and filtering, as well as clone calling. This gets 
 executed by firstly calling `scripts/cell.R`, loading `.bam`data and preparing CellTags for collapsing, 
 followed by `scripts/filtering_cloneCalling.R` in which CellTags are filtered and clones called. 
