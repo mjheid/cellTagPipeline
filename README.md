@@ -89,7 +89,9 @@ followed by `scripts/filtering_cloneCalling.R` in which CellTags are filtered an
 `scripts/map_cellTags.R` runs the seurat [workflow](https://satijalab.org/seurat/articles/pbmc3k_tutorial.html) 
 while [regressing out cell cycle genes](https://satijalab.org/seurat/articles/cell_cycle_vignette.html) as 
 well as [mitochrondial genes](https://github.com/satijalab/seurat/issues/6613). Afterwards several visualisation 
-options exist to visualize distribution of CellTags, clones and genes.
+options exist to visualize distribution of CellTags, clones and genes. `analysis.Rmd` creates `analysis.html`,
+showcaseing some gene expression analysis of CellTag data. `control.sh` is the script over which the created 
+tool can be excuted and controlled.
 
 ## control of CellTag Pipeline
 
