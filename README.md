@@ -1,4 +1,4 @@
-# cellTag Pipeline
+# CellTag Pipeline
 In this Project we implement a command line tool for the CellTag pipline using 
 [CellTagR](https://github.com/morris-lab/CellTagR). Most necessary steps for running 
 the bioinformatics celltag pipline can be done by this tool. We also provide a simple 
